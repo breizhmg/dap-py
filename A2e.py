@@ -35,9 +35,9 @@ class A2e:
         '''cert can be an existing certificate
         or a file path to a .cert file
         '''
-        self.api_url = 'https://l77987ttq5.execute-api.us-west-2.amazonaws.com/prod'
-        self.cert = cert
-        self.auth = None
+        self._api_url = 'https://l77987ttq5.execute-api.us-west-2.amazonaws.com/prod'
+        self._cert = cert
+        self._auth = None
 
         # TODO: certify from cert string
         # TODO: certify from ~/.cert file
@@ -49,7 +49,7 @@ class A2e:
     def _request_cert(self, params):
         '''Request a certificate
         '''
-        req = requests.put('{}/creds'.format(self.api_url), params=params)
+        req = requests.put('{}/creds'.format(self._api_url), params=params)
 
         if req.status_code != 200:
             raise BadStatusCodeError(req)
@@ -62,7 +62,7 @@ class A2e:
         '''
         self.auth = {
             "Authorization": "Cert {}".format(
-                base64.b64encode(self.cert.encode("utf-8")).decode("ascii"))
+                base64.b64encode(self._cert.encode("utf-8")).decode("ascii"))
         }
         
 
@@ -73,8 +73,8 @@ class A2e:
         self._create_cert_auth()
 
 
-    def _create_basic_auth(self, username, password):
-        '''Create the auth token without 
+    def setup_basic_auth(self, username, password):
+        '''Create the auth token without a certificate
         '''
         self.auth = {
             "Authorization": "Basic {}".format(base64.b64encode(
@@ -83,11 +83,11 @@ class A2e:
         }
 
 
-    def guest_auth(self):
-        self._create_basic_auth('guest', 'guest')
+    def setup_guest_auth(self):
+        self.setup_basic_auth('guest', 'guest')
 
 
-    def user_pass_auth(self, username, password):
+    def setup_cert_auth(self, username, password):
         '''Given username and password request a
         cert token and generate an auth code
         '''
@@ -99,7 +99,7 @@ class A2e:
         self._request_cert_auth(params)
 
 
-    def two_factor_auth(self, username, password, email, authcode):
+    def setup_two_factor_auth(self, username, password, email, authcode):
         '''Given username, password, email, and authcode,
         request a cert token and generate an auth code
         '''
@@ -120,12 +120,12 @@ class A2e:
         '''Search the table and return the matching file paths
         https://github.com/a2edap/tools/tree/master/lambda/api/get-info
         '''
-        if not self.auth:
+        if not self._auth:
             raise Exception('Auth token cannot be None')
 
         req = requests.post(
-            '{}/searches'.format(self.api_url),
-            headers=self.auth,
+            '{}/searches'.format(self._api_url),
+            headers=self._auth,
             data=json.dumps({
                 'source': table,
                 'output': 'json',
@@ -147,7 +147,7 @@ class A2e:
     def place_order(self, files):
         '''Place an order and return the order ID
         '''
-        if not self.auth:
+        if not self._auth:
             raise Exception('Auth token cannot be None')
 
         params = {
@@ -155,8 +155,8 @@ class A2e:
         }
 
         req = requests.put(
-            '{}/orders'.format(self.api_url), 
-            headers=self.auth, 
+            '{}/orders'.format(self._api_url), 
+            headers=self._auth, 
             data=json.dumps(params)
         )
 
@@ -173,12 +173,12 @@ class A2e:
     def get_download_urls(self, id):
         '''Given order ID, return the download urls
         '''
-        if not self.auth:
+        if not self._auth:
             raise Exception('Auth token cannot be None')
 
         req = requests.get(
-            '{}/orders/{}/urls'.format(self.api_url, id), 
-            headers=self.auth
+            '{}/orders/{}/urls'.format(self._api_url, id), 
+            headers=self._auth
         )
 
         if req.status_code != 200:
