@@ -22,22 +22,22 @@ a2e = A2e.A2e(<cert>)
 ```
 If the certificate is valid, it will be renewed and written to the `~/.cert` file. Otherwise, use one of the following methods:
 
-### `a2e.setup_guest_auth()`
+#### `a2e.setup_guest_auth()`
 Sets up basic authentication for a guest user. This is identical to setting up basic authentication with the username and password `guest`.
 
-### `a2e.setup_basic_auth(username=None, password=None)`
+#### `a2e.setup_basic_auth(username=None, password=None)`
 Sets up basic authentication with a username and password. The arguments are optional, but the module will prompt for them if omitted.
 
-### `a2e.setup_cert_auth(username=None, password=None)`
+#### `a2e.setup_cert_auth(username=None, password=None)`
 Similar to the method above, but will request a certificate instead of using basic authentication. The certificate is stored in the `~./cert` file. Will prompt user for omitted arguments.
 
-### `a2e.setup_two_factor_auth(username=None, password=None, email=None, authcode=None)`
+#### `a2e.setup_two_factor_auth(username=None, password=None, email=None, authcode=None)`
 Similar to the method above, but uses two-factor authentication. The authcode is the 6 digit number from Google Authenticator. This is the highest authentication level available. The certificate is stored in the `~./cert` file. Will prompt user for omitted arguments.
 
 ## Searching for Files
 Searching is straight-forward with this module. Simple call this method and a list of files will be returned.
 
-### `a2e.search(filter_arg, table='Inventory')`
+#### `a2e.search(filter_arg, table='Inventory')`
 Query the respective table in AWS with the given filter argument. An example filter argument is shown below:
 ```
 filter_arg = {
@@ -53,10 +53,10 @@ The documentation for constructing the filter argument can be found [here](https
 ## Downloading Files
 There are two ways to download files using this module. The first places an order for the files, gets the download urls, and downloads the files to the provided path. The second uses the `/downloads` api method to search for the files and download them to the provided path in one step. The latter is dangerous if you don't know how many files you are about to download!
 
-### `a2e.download_files(files, path='/var/tmp/', force=False)`
+#### `a2e.download_files(files, path='/var/tmp/', force=False)`
 Provided with a list of files, place an order for the files and download them. The path specifies the directory the files will download to, and the force flag determines whether files will be overriden. By default, if a file already exists, it will not be downloaded.
 
-### `a2e.download_search(filter_arg, path='/var/tmp/', force=False)`
+#### `a2e.download_search(filter_arg, path='/var/tmp/', force=False)`
 Provided with a [filter argument](https://github.com/a2edap/tools/tree/master/lambda/api/data-download), search the Inventory table and download the files in s3. Be careful with this one. I heard a rumor through the grapevine that only files in s3 will be downloaded, so if you think some data could be someone else, use the other download method.
 
 ## Examples
