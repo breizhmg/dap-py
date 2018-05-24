@@ -60,7 +60,7 @@ class A2e:
     def _create_cert_auth(self):
         '''Given an existing certificate, create an auth token
         '''
-        self.auth = {
+        self._auth = {
             "Authorization": "Cert {}".format(
                 base64.b64encode(self._cert.encode("utf-8")).decode("ascii"))
         }
@@ -73,10 +73,14 @@ class A2e:
         self._create_cert_auth()
 
 
-    def setup_basic_auth(self, username, password):
+    def setup_basic_auth(self, username=None, password=None):
         '''Create the auth token without a certificate
         '''
-        self.auth = {
+
+        username = username or input('username: ')
+        password = password or getpass('password: ')
+
+        self._auth = {
             "Authorization": "Basic {}".format(base64.b64encode(
                 ("{}:{}".format(username, password)).encode("utf-8")
             ).decode("ascii"))
@@ -84,30 +88,36 @@ class A2e:
 
 
     def setup_guest_auth(self):
+        '''Just sets up basic auth as a guest
+        '''
         self.setup_basic_auth('guest', 'guest')
 
 
-    def setup_cert_auth(self, username, password):
+    def setup_cert_auth(self, username=None, password=None):
         '''Given username and password request a
         cert token and generate an auth code
         '''
+        # TODO: don't prompt if they already have a valid certificate
+        # instead just renew their certificate? or nothing? talk to Matt
         params = {
-            'username': username,
-            'password': password,
+            'username': username or input('username: '),
+            'password': password or getpass('password: '),
         }
 
         self._request_cert_auth(params)
 
 
-    def setup_two_factor_auth(self, username, password, email, authcode):
+    def setup_two_factor_auth(self, username=None, password=None, email=None, authcode=None):
         '''Given username, password, email, and authcode,
         request a cert token and generate an auth code
         '''
+        # TODO: don't prompt if they already have a valid certificate
+        # instead just renew their certificate? or nothing? talk to Matt
         params = {
-            'username': username,
-            'password': password,
-            'email': email,
-            'authcode': authcode
+            'username': username or input('username: '),
+            'password': password or getpass('password: '),
+            'email': email or input('email: '),
+            'authcode': authcode or getpass('authcode: '),
         }
 
         self._request_cert_auth(params)
@@ -144,7 +154,7 @@ class A2e:
     # - Placing Orders ---------------------------------------------
     # --------------------------------------------------------------
 
-    def place_order(self, files):
+    def _place_order(self, files):
         '''Place an order and return the order ID
         '''
         if not self._auth:
@@ -170,7 +180,7 @@ class A2e:
     # - Getting download URLs --------------------------------------
     # --------------------------------------------------------------
 
-    def get_download_urls(self, id):
+    def _get_download_urls(self, id):
         '''Given order ID, return the download urls
         '''
         if not self._auth:
@@ -186,8 +196,146 @@ class A2e:
 
         urls = json.loads(req.text)['urls']
         return urls
-
     
+    # --------------------------------------------------------------
+    # - Download from URLs -----------------------------------------
+    # --------------------------------------------------------------
+
+    def _download(self, url, path):
+        ''' Actually download the files
+        '''
+        req = requests.get(url, stream=True)
+        if req.status_code != 200:
+            raise BadStatusCodeError(req)
+        while True: # is this needed?
+            with open(path, "wb") as fp:
+                for chunk in req.iter_content(chunk_size=1024):
+                    fp.write(chunk)
+            print("Download successful! {}".format(path))
+            break
+
+    def _download_from_urls(self, urls, path='/var/tmp/', force=False):
+        '''Given a list of urls, download them
+        Returns the successfully downloaded file paths
+        '''
+        if not urls:
+            raise Exception('No urls provided')
+
+        downloaded_files = []
+        
+        # TODO: multi-thread this
+        for url in urls:
+            try:
+                a = url.split('/')
+                filename = a[5].split('?')[0]
+
+                dataset = '{}.{}'.format(
+                    a[4], '.'.join(a[5].split('.')[:3])
+                )
+
+                # /var/tmp/wfip2.lidar.z01.b0
+                download_dir = os.path.join(path, dataset)
+                os.makedirs(download_dir, exist_ok=True)
+                # the final file path
+                filepath = os.path.join(download_dir, filename)
+            except:
+                print('Incorrectly formmated file path in url: {}'.format(url))
+                continue
+
+            if not force and os.path.exists(filepath):
+                print('File: {} already exists, skipping...'.format(filepath))
+                continue
+
+            try:
+                self._download(url, filepath)
+            except BadStatusCodeError as e:
+                print('Could not download file: {}'.format(filepath))
+                print(e)
+                continue
+
+            downloaded_files.append(filepath)
+        return downloaded_files
+
+    # --------------------------------------------------------------
+    # - Place Order and Download  ----------------------------------
+    # --------------------------------------------------------------
+
+    def download_files(self, files, path='/var/tmp/', force=False):
+        '''places order, gets download urls, downloads files
+        '''
+        if not files:
+            print('No files provided')
+            return
+
+        try:
+            id = self._place_order(files)
+        except BadStatusCodeError as e:
+            print('Could not place order')
+            print(e)
+            return
+
+        try:
+            urls = self._get_download_urls(id)
+        except BadStatusCodeError as e:
+            print('Could not get download urls')
+            print(e)
+            return
+
+        try:
+            downloaded_files = self._download_from_urls(urls)
+        except Exception as e:
+            print(e)
+            return
+
+        return downloaded_files
+
+    # --------------------------------------------------------------
+    # - Download All matching Search  ------------------------------
+    # --------------------------------------------------------------
+        
+    def _search_for_urls(self, filter_arg):
+        '''uses the alternative api /downloads method
+        to search the inventory table and return
+        the download urls to files in s3
+        '''
+        if not self._auth:
+            raise Exception('Auth token cannot be None')
+
+        req = requests.post(
+            '{}/downloads'.format(self._api_url),
+            headers=self._auth,
+            data=json.dumps(filter_arg)
+        )
+
+        if req.status_code != 200:
+            raise BadStatusCodeError(req)
+
+        # does not work
+        return req.text
+
+    def download_search(self, filter_arg, path='/var/tmp/', force=False):
+        '''Uses the /downloads api method to download straight from 
+        the search without placing orders and downloading from there
+        '''
+        try:
+            urls = self._search_for_urls(filter_arg)
+        except BadStatusCodeError as e:
+            print('Could not find download urls')
+            print(e)
+            return
+        except Exception as e:
+            print(e)
+            return
+
+        if not urls:
+            print('No files found')
+
+        # TODO: finish
+        try:
+            downloaded_files = self._download_from_urls(urls)
+        except Exception as e:
+            print(e)
+            return
+        return downloaded_files
 
 
-    
