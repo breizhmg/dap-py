@@ -54,11 +54,16 @@ The documentation for constructing the filter argument can be found [here](https
 There are two ways to download files using this module. The first places an order for the files, gets the download urls, and downloads the files to the provided path. The second uses the `/downloads` api method to search for the files and download them to the provided path in one step. The latter is dangerous if you don't know how many files you are about to download!
 
 #### `a2e.download_files(files, path='/var/tmp/', force=False)`
+<<<<<<< HEAD
 Provided with a list of files, place an order for the files and download them. The path specifies the directory the files will download to, and the force flag determines whether files will be overriden. By default, if a file already exists, it will not be downloaded. Does not work using guest credentials because guests cannot place an order.
+=======
+Provided with a list of files, place an order for the files and download them. The path specifies the directory the files will download to, and the force flag determines whether files will be overriden. By default, if a file already exists, it will not be downloaded.
+>>>>>>> 3edd4c7328629f3a55892d8f87dfde823b43e042
 
 #### `a2e.download_search(filter_arg, path='/var/tmp/', force=False)`
 Provided with a [filter argument](https://github.com/a2edap/tools/tree/master/lambda/api/data-download), search the Inventory table and download the files in s3. Be careful with this one. I heard a rumor through the grapevine that only files in s3 will be downloaded, so if you think some data could be someone else, use the other download method.
 
+<<<<<<< HEAD
 ## Example
 ```
 from A2e import A2e
@@ -75,3 +80,6 @@ files = a2e.search({
 
 a2e.download_files(files, force=True)
 ```
+=======
+## Examples
+>>>>>>> 3edd4c7328629f3a55892d8f87dfde823b43e042
