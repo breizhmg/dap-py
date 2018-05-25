@@ -13,14 +13,14 @@ Then, create an instance of the A2e class.:
 ```
 a2e = A2e.A2e()
 ```
-And that's it! Setup is complete. All future methods will revolve around this `a2e` object.
+And that's it! Setup is complete. All future methods will revolve around this `a2e` object. Alternatively, the constructor accepts two optional arguments: `cert` and `quiet`. The cert argument takes in a cert string. The quiet argument when set to `True` disables output. Useful for scripting.
 
 ## Authentication
 Authentication is very simple with this module. This module supports both __basic__ and __certificate__ authentication protocols. The basic methods do not use a certificate, expire more quickly, and do not support two-factor authentication. The other methods in this module will not work without proper authentication. When an A2e instance is created, the constructor looks for any existing certificates in `~/.cert` and tries to renews it. Alternatively, a certificate can be passed into the constructor:
 ```
 a2e = A2e.A2e(<cert>)
 ```
-If the certificate is valid, it will be renewed and written to the `~/.cert` file. Otherwise, use one of the following methods:
+If the certificate is valid, it will be renewed and written to the `~/.cert` file. Otherwise, it defaults to basic guest authentication. The following are the different authentication methods:
 
 #### `a2e.setup_guest_auth()`
 Sets up basic authentication for a guest user. This is identical to setting up basic authentication with the username and password `guest`.
@@ -57,7 +57,7 @@ There are two ways to download files using this module. The first places an orde
 Provided with a list of files, place an order for the files and download them. The path specifies the directory the files will download to, and the force flag determines whether files will be overriden. By default, if a file already exists, it will not be downloaded. Does not work using guest credentials because guests cannot place an order.
 
 #### `a2e.download_search(filter_arg, path='/var/tmp/', force=False)`
-Provided with a [filter argument](https://github.com/a2edap/tools/tree/master/lambda/api/data-download), search the Inventory table and download the files in s3. Be careful with this one. I heard a rumor through the grapevine that only files in s3 will be downloaded, so if you think some data could be someone else, use the other download method.
+Provided with a [filter argument](https://github.com/a2edap/tools/tree/master/lambda/api/data-download), search the Inventory table and download the files in s3. I heard a rumor through the grapevine that only files in s3 will be downloaded, so if you think some data could be someone else, use the other download method.
 
 ## Example
 ```
