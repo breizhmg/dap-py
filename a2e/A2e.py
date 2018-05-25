@@ -396,7 +396,8 @@ class A2e:
         if req.status_code != 200:
             raise BadStatusCodeError(req)
 
-        return req.text
+        urls = json.loads(req.text)['urls'].values()
+        return urls
 
     def download_search(self, filter_arg, path='/var/tmp/', force=False):
         '''Uses the /downloads api method to download straight from 
