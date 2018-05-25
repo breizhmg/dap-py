@@ -420,7 +420,7 @@ class A2e:
             return
 
         try:
-            downloaded_files = self._download_from_urls(urls)
+            downloaded_files = self._download_from_urls(urls, path=path, force=force)
         except Exception as e:
             self._print(e)
             return
