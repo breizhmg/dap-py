@@ -1,4 +1,4 @@
-# A2e Package
+# a2e Package
 This package contains the A2e module and wraps all of the other packages to make importing modules easy. Each of the sub-packages are explained in detail in their own README files. For more information on the A2e module, keep reading.
 
 # A2e Module
@@ -7,9 +7,9 @@ The A2e module is a high-level interface that allows the programmer to use our A
 ## Setup
 First, import the module:
 ```
-from A2e import A2e
+from a2e import A2e
 ```
-Then, create an instance of the A2e class.:
+Then, create an instance of the A2e class:
 ```
 a2e = A2e.A2e()
 ```

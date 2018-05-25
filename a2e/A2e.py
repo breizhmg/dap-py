@@ -1,8 +1,8 @@
 '''
-File: a2e.py
-Author: Logan Dihel, Matt Macduff
+File: A2e.py
+Author: Logan Dihel
 Date: 5/24/2018
-Last Modified: 5/24/2018
+Last Modified: 5/25/2018
 Description: This file shall be imported and handle 
 all of the respective A2e APIs with simple, high-level
 wrapper functions
@@ -114,6 +114,10 @@ class A2e:
             ).decode("ascii"))
         }
 
+        # TODO: check if the creds are valid
+        # without a certificate
+        # should we try a query? low priority
+
 
     def setup_guest_auth(self):
         '''Just sets up basic auth as a guest
@@ -178,7 +182,7 @@ class A2e:
     def _cert_is_valid(self):
         try:
             message = self._renew_cert()
-        except ValueError:
+        except:
             return False
         return message == 'success'
 
