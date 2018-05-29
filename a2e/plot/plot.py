@@ -67,7 +67,7 @@ class Plotter:
                 for x in self.mf.variables.keys() \
                 if re.search(pattern, x)}
 
-            shapes = {self.mf.variables[x][:].shape for x in var_names}
+            shapes = {self.mf.variables[x].shape for x in var_names}
             if len(shapes) != 1:
                 print('Could not plot variables {} because of inconsistent shapes: {}'.format(
                     ', '.join( 
@@ -119,9 +119,8 @@ class Plotter:
                 print('3 dimensional matrix plots are not yet implemented')
                 continue
 
-        print(plot_groups)
-
-        self._plot(plot_groups, begin, end, width, height)
+        if plot_groups:
+            self._plot(plot_groups, begin, end, width, height)
 
     def _plot(self, plot_groups, begin, end, width, height):
         '''actually plots the data
@@ -145,75 +144,72 @@ class Plotter:
             for j, var_name in enumerate(var_names):
                 # plot each variable on the same graph
                 if dimensions == 0:
-                    ax.plot(
-                        np.ma.masked_greater(
-                            self.mf.variables[var_name][start_index:end_index],
-                            9e+36
-                        ),
-                        marker='o', color=colors[j % len(colors)]
+                    y = np.ma.masked_greater(
+                        self.mf.variables[var_name][start_index:end_index],
+                        9e+36
                     )
 
+                    if y.count() > 0:
+                        ax.plot(y,marker='o', color=colors[j % len(colors)])
+
                 elif dimensions == 1:
+                    y = np.ma.masked_greater(
+                        self.mf.variables[var_name][start_index:end_index],
+                        9e+36
+                    )
+
                     if 'time' in group['dimensions']:
-                        ax.plot(
-                            self.time[start_index:end_index],
-                            np.ma.masked_greater(
-                                self.mf.variables[var_name][start_index:end_index],
-                                9e+36
-                            ),
-                            marker='o', color=colors[j % len(colors)]
-                        )
+                        if y.count() > 0:
+                            x = self.time[start_index:end_index]
+                            ax.plot(x, y, marker='o', color=colors[j % len(colors)])
                     else:
-                        ax.plot(
-                            np.ma.masked_greater(
-                                self.mf.variables[var_name][:],
-                                9e+36
-                            ),
-                            marker='o', color=colors[j % len(colors)]
-                        )
+                        ax.plot(y, marker='o', color=colors[j % len(colors)])
 
                 elif dimensions == 2:
+                    y = np.ma.masked_greater(
+                        self.mf.variables[var_name][start_index:end_index][:,group['slice'][1]],
+                        9e+36
+                    )
+
                     if 'time' in group['dimensions']:
-                        ax.plot(
-                            self.time[start_index:end_index],
-                            np.ma.masked_greater(
-                                self.mf.variables[var_name][start_index:end_index][:,group['slice'][1]],
-                                9e+36
-                            ),
-                            marker='o', color=colors[j % len(colors)]
-                        )
+                        if y.count() > 0:
+                            x = self.time[start_index:end_index]
+                            ax.plot(x, y, marker='o', color=colors[j % len(colors)])
                     else:
-                        ax.plot(
-                            np.ma.masked_greater(
-                                self.mf.variables[var_name][:][:,group['slice'][1]],
-                                9e+36
-                            ),
-                            marker='o', color=colors[j % len(colors)]
-                        )
+                        ax.plot(y, marker='o', color=colors[j % len(colors)])
 
                 else:
-                    print('Not implemented yet')
+                    print('Not implemented')
 
-            # xlabels
+            # xlabel
             if dimensions == 0:
-                ax.set(xlabel='data point')
+                ax.set_xlabel('data point')
             elif dimensions == 1:
-                ax.set(xlabel=group['dimensions'][0])
+                ax.set_xlabel(group['dimensions'][0])
             elif dimensions == 2:
-                ax.set(xlabel=', '.join(group['dimensions']))
+                ax.set_xlabel('{}, {}({})'.format(
+                    group['dimensions'][0],
+                    group['dimensions'][1],
+                    str(self.mf.variables[group['dimensions'][1]][:][group['slice'][1]]) \
+                        + ' ' + str(self.mf.variables[group['dimensions'][1]].units)
+                ))
             else:
-                print('not implemented')
-                pass
+                print('Not implemented')
 
-            # everything else
-            # ax.set(
-            #     title=', '.join(var_names),
-            #    # ylabel=', '.join({self.mf.variables[x]['units'] for x in var_names})
-            # )
+            ax.set_title(', '.join(var_names))
 
-            # ax.legend(['{} ({})'.format(x, self.mf.variables[x]['units'])\
-            #     for x in var_names
-            # ])
+            if all('units' in self.mf.variables[x].ncattrs() for x in var_names):
+                ax.set_ylabel(', '.join({self.mf.variables[x].units for x in var_names}))
+                ax.legend(['{} ({})'.format(x, self.mf.variables[x].units) \
+                    for x in var_names
+                ])
+            else:
+                ax.set_ylabel('???')
+                ax.legend(['{}'.format(x) \
+                    for x in var_names
+                ])
+
+            ax.grid()
 
         plt.show()
 
