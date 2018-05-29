@@ -67,9 +67,9 @@ class Plotter:
                 for x in self.mf.variables.keys() \
                 if re.search(pattern, x)}
 
-            shapes = {self.mf.variables[x].shape for x in var_names}
+            shapes = {self.mf.variables[x][:].shape for x in var_names}
             if len(shapes) != 1:
-                print('Could not plot variables {} because of inconsistent shapes: {}'.format(
+                print('Could not plot variables {} on same plot because of inconsistent shapes: {}'.format(
                     ', '.join( 
                         ['\'{}\''.format(x) for x in var_names]
                     ),
@@ -77,11 +77,17 @@ class Plotter:
                         ['\'{}\''.format(self.mf.variables[x][:].shape) for x in var_names]
                     )
                 ))
+                # group the variables into the largest chunks that will graph together
+                # based on shape and add this back into variable_groups to process again
+                for shape in shapes:
+                    variable_groups.append(
+                        ['^{}$'.format(x) for x in var_names if self.mf.variables[x][:].shape == shape]
+                    )
                 continue
 
             dimensioned_by = {self.mf.variables[x].dimensions for x in var_names}
             if len(dimensioned_by) != 1:
-                print('Could not plot variables {} because of inconsistent dimensions: {}'.format(
+                print('Could not plot variables {} on same plot because of inconsistent dimensions: {}'.format(
                     ', '.join( 
                         ['\'{}\''.format(x) for x in var_names]
                     ),
@@ -89,6 +95,12 @@ class Plotter:
                         ['\'{}\''.format(self.mf.variables[x].dimensions) for x in var_names]
                     )
                 ))
+                # group the variables into the largest chunks that will graph together
+                # based on dim and add this back into variable_groups to process again
+                for dim in dimensioned_by:
+                    variable_groups.append(
+                        ['^{}$'.format(x) for x in var_names if self.mf.variables[x].dimensions == dim]
+                    )
                 continue
 
             shape = list(shapes)[0]
