@@ -187,23 +187,31 @@ class Plotter:
             elif dimensions == 1:
                 ax.set_xlabel(group['dimensions'][0])
             elif dimensions == 2:
-                ax.set_xlabel('{}, {}({})'.format(
-                    group['dimensions'][0],
-                    group['dimensions'][1],
-                    str(self.mf.variables[group['dimensions'][1]][:][group['slice'][1]]) \
-                        + ' ' + str(self.mf.variables[group['dimensions'][1]].units)
-                ))
+                try:
+                    ax.set_xlabel('{}, {}({})'.format(
+                        group['dimensions'][0],
+                        group['dimensions'][1],
+                        str(self.mf.variables[group['dimensions'][1]][:][group['slice'][1]]) \
+                            + ' ' + str(self.mf.variables[group['dimensions'][1]].units)
+                    ))
+                except:
+                    ax.set_xlabel('{}, {}({})'.format(
+                        group['dimensions'][0],
+                        group['dimensions'][1],
+                        group['slice'][1]
+                    ))
             else:
                 print('Not implemented')
 
             ax.set_title(', '.join(var_names))
 
-            if all('units' in self.mf.variables[x].ncattrs() for x in var_names):
+            #if all('units' in self.mf.variables[x].ncattrs() for x in var_names):
+            try:
                 ax.set_ylabel(', '.join({self.mf.variables[x].units for x in var_names}))
                 ax.legend(['{} ({})'.format(x, self.mf.variables[x].units) \
                     for x in var_names
                 ])
-            else:
+            except:
                 ax.set_ylabel('???')
                 ax.legend(['{}'.format(x) \
                     for x in var_names
