@@ -51,7 +51,7 @@ class Plotter:
         # get the rest of the data
         self.mf = MFDataset(files)
 
-    def plot(self, variable_groups, begin=None, end=None, width=18, height=6):
+    def plot(self, *variable_groups, begin=None, end=None, width=18, height=6):
         '''public function for plotting a list of regex tuples/lists/sets
         calls the private _plot method after creating all of the plot groups
         in the correct format. The purpose of this function is two fold:
@@ -60,23 +60,32 @@ class Plotter:
                 to loop over and generate plots quickly
         '''
         plot_groups = []
+        variable_groups = [x if type(x) == list else [x] \
+            for x in variable_groups]
+
+        # by default, graph everything
+        if not variable_groups:
+            variable_groups = ['.*?']
 
         for group in variable_groups:
-
-            var_names = {x for pattern in group \
-                for x in self.mf.variables.keys() \
-                if re.search(pattern, x)}
+            
+            try:
+                var_names = {x for pattern in group \
+                    for x in self.mf.variables.keys() \
+                    if re.search(pattern, x)}
+            except:
+                print('Incorrectly formatted regex expression in group: ', group)
 
             shapes = {self.mf.variables[x][:].shape for x in var_names}
             if len(shapes) != 1:
-                print('Could not plot variables {} on same plot because of inconsistent shapes: {}'.format(
-                    ', '.join( 
-                        ['\'{}\''.format(x) for x in var_names]
-                    ),
-                    ', '.join(
-                        ['\'{}\''.format(self.mf.variables[x][:].shape) for x in var_names]
-                    )
-                ))
+                # print('Could not plot variables {} on same plot because of inconsistent shapes: {}'.format(
+                #     ', '.join( 
+                #         ['\'{}\''.format(x) for x in var_names]
+                #     ),
+                #     ', '.join(
+                #         ['\'{}\''.format(self.mf.variables[x][:].shape) for x in var_names]
+                #     )
+                # ))
                 # group the variables into the largest chunks that will graph together
                 # based on shape and add this back into variable_groups to process again
                 for shape in shapes:
@@ -87,20 +96,52 @@ class Plotter:
 
             dimensioned_by = {self.mf.variables[x].dimensions for x in var_names}
             if len(dimensioned_by) != 1:
-                print('Could not plot variables {} on same plot because of inconsistent dimensions: {}'.format(
-                    ', '.join( 
-                        ['\'{}\''.format(x) for x in var_names]
-                    ),
-                    ', '.join(
-                        ['\'{}\''.format(self.mf.variables[x].dimensions) for x in var_names]
-                    )
-                ))
+                # print('Could not plot variables {} on same plot because of inconsistent dimensions: {}'.format(
+                #     ', '.join( 
+                #         ['\'{}\''.format(x) for x in var_names]
+                #     ),
+                #     ', '.join(
+                #         ['\'{}\''.format(self.mf.variables[x].dimensions) for x in var_names]
+                #     )
+                # ))
                 # group the variables into the largest chunks that will graph together
                 # based on dim and add this back into variable_groups to process again
                 for dim in dimensioned_by:
                     variable_groups.append(
                         ['^{}$'.format(x) for x in var_names if self.mf.variables[x].dimensions == dim]
                     )
+                continue
+
+            units = {self.mf.variables[x].units \
+                if 'units' in self.mf.variables[x].ncattrs() else None \
+                for x in var_names}
+            if len(units) != 1:
+                # print('Could not plot variables {} on same plot because of inconsistent units: {}'.format(
+                #     ', '.join( 
+                #         ['\'{}\''.format(x) for x in var_names]
+                #     ),
+                #     ', '.join(
+                #         ['\'{}\''.format(self.mf.variables[x].units) \
+                #         if 'units' in self.mf.variables[x].ncattrs() else None \
+                #         for x in var_names]
+                #     )
+                # ))
+                # group the variables into the largest chunks that will graph together
+                # based on units and add this back into variable_groups to process again
+                for unit in units:
+                    appendage = []
+                    for x in var_names:
+                        status = False
+                        try:
+                            status = (self.mf.variables[x].units == unit)
+                        except AttributeError:
+                            # has no units value
+                            # this is faster than checking for units in ncattrs()
+                            status = (unit == None)
+                        finally:
+                            if status:
+                                appendage.append('^{}$'.format(x))
+                    variable_groups.append(appendage)
                 continue
 
             shape = list(shapes)[0]
@@ -133,6 +174,8 @@ class Plotter:
 
         if plot_groups:
             self._plot(plot_groups, begin, end, width, height)
+        else:
+            print('No variables to plot')
 
     def _plot(self, plot_groups, begin, end, width, height):
         '''actually plots the data
