@@ -26,6 +26,10 @@ class Plotter:
                 for x in os.listdir(path) \
                 if any(re.match(pattern, x) for pattern in regexes)]
 
+        if not files:
+            print('No files found matching')
+            return
+
         self.time = np.array([])
         # normalize time first
         fhs = [Dataset(x) for x in files]
@@ -59,13 +63,18 @@ class Plotter:
             2.  Package all of the plots in a manner that is easy
                 to loop over and generate plots quickly
         '''
+
+        if begin and end and begin >= end:
+            print('Begin time must be before end time')
+            return
+
         plot_groups = []
         variable_groups = [x if type(x) == list else [x] \
             for x in variable_groups]
 
         # by default, graph everything
         if not variable_groups:
-            variable_groups = ['.*?']
+            variable_groups = [['.*?']]
 
         for group in variable_groups:
             
@@ -75,17 +84,10 @@ class Plotter:
                     if re.search(pattern, x)}
             except:
                 print('Incorrectly formatted regex expression in group: ', group)
+                continue
 
             shapes = {self.mf.variables[x][:].shape for x in var_names}
             if len(shapes) != 1:
-                # print('Could not plot variables {} on same plot because of inconsistent shapes: {}'.format(
-                #     ', '.join( 
-                #         ['\'{}\''.format(x) for x in var_names]
-                #     ),
-                #     ', '.join(
-                #         ['\'{}\''.format(self.mf.variables[x][:].shape) for x in var_names]
-                #     )
-                # ))
                 # group the variables into the largest chunks that will graph together
                 # based on shape and add this back into variable_groups to process again
                 for shape in shapes:
@@ -96,14 +98,6 @@ class Plotter:
 
             dimensioned_by = {self.mf.variables[x].dimensions for x in var_names}
             if len(dimensioned_by) != 1:
-                # print('Could not plot variables {} on same plot because of inconsistent dimensions: {}'.format(
-                #     ', '.join( 
-                #         ['\'{}\''.format(x) for x in var_names]
-                #     ),
-                #     ', '.join(
-                #         ['\'{}\''.format(self.mf.variables[x].dimensions) for x in var_names]
-                #     )
-                # ))
                 # group the variables into the largest chunks that will graph together
                 # based on dim and add this back into variable_groups to process again
                 for dim in dimensioned_by:
@@ -116,16 +110,6 @@ class Plotter:
                 if 'units' in self.mf.variables[x].ncattrs() else None \
                 for x in var_names}
             if len(units) != 1:
-                # print('Could not plot variables {} on same plot because of inconsistent units: {}'.format(
-                #     ', '.join( 
-                #         ['\'{}\''.format(x) for x in var_names]
-                #     ),
-                #     ', '.join(
-                #         ['\'{}\''.format(self.mf.variables[x].units) \
-                #         if 'units' in self.mf.variables[x].ncattrs() else None \
-                #         for x in var_names]
-                #     )
-                # ))
                 # group the variables into the largest chunks that will graph together
                 # based on units and add this back into variable_groups to process again
                 for unit in units:
@@ -260,7 +244,6 @@ class Plotter:
 
             ax.set_title(', '.join(var_names))
 
-            #if all('units' in self.mf.variables[x].ncattrs() for x in var_names):
             try:
                 ax.set_ylabel(', '.join({self.mf.variables[x].units for x in var_names}))
                 ax.legend(['{} ({})'.format(x, self.mf.variables[x].units) \
