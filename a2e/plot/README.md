@@ -59,7 +59,7 @@ from a2e.plot import plot
 
 plotter = plot.Plotter('/var/tmp/wfip2.lidar.z01.b0/')
 
-# plots wind_u, wind)v, and vertical_air_velocity
+# plots wind_u, wind_v, and vertical_air_velocity
 # against each other, while height and time variables
 # are plotted by themselves
 plotter.plot(
