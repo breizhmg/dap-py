@@ -334,14 +334,13 @@ class A2e:
 
             if not force and os.path.exists(filepath):
                 self._print('File: {} already exists, skipping...'.format(filepath))
-                continue
-
-            try:
-                self._download(url, filepath)
-            except BadStatusCodeError as e:
-                self._print('Could not download file: {}'.format(filepath))
-                self._print(e)
-                continue
+            else:
+                try:
+                    self._download(url, filepath)
+                except BadStatusCodeError as e:
+                    self._print('Could not download file: {}'.format(filepath))
+                    self._print(e)
+                    continue
 
             downloaded_files.append(filepath)
         return downloaded_files
