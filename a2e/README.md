@@ -66,7 +66,7 @@ filter_arg = {
 }
 ```
 
-The documentation for constructing the filter argument can be found [here](https://github.com/a2edap/tools/tree/master/lambda/api/data-download).
+The documentation for constructing the filter argument can be found [here](https://github.com/a2edap/dap-py/blob/master/a2e/download-README.md).
 
 ### Downloading Files
 
@@ -78,7 +78,7 @@ Provided with a list of files, place an order for the files and download them. T
 
 #### `a2e.download_search(filter_arg, path='/var/tmp/', force=False)`
 
-Provided with a [filter argument](https://github.com/a2edap/tools/tree/master/lambda/api/data-download), search the Inventory table and download the files in s3. I heard a rumor through the grapevine that only files in s3 will be downloaded, so if you think some data could be someone else, use the other download method.
+Provided with a [filter argument](https://github.com/a2edap/dap-py/blob/master/a2e/download-README.md), search the Inventory table and download the files in s3. I heard a rumor through the grapevine that only files in s3 will be downloaded, so if you think some data could be someone else, use the other download method.
 
 ## Example
 
