@@ -20,7 +20,10 @@ from getpass import getpass
 class BadStatusCodeError(RuntimeError):
     def __init__(self, req):
         self.status_code = req.status_code
-        self.reason = req.reason
+        try:
+            self.reason = req.json()['message']
+        except:
+            self.reason = req.reason
 
     def __str__(self):
         return ((
@@ -251,6 +254,7 @@ class A2e:
             raise Exception('Auth token cannot be None')
 
         params = {
+            'dataset': 'mmc/tower.z01.00',
             'files': files,
         }
 
