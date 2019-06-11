@@ -254,7 +254,6 @@ class A2e:
             raise Exception('Auth token cannot be None')
 
         params = {
-            'dataset': 'mmc/tower.z01.00',
             'files': files,
         }
 
