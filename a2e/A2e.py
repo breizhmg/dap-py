@@ -42,7 +42,7 @@ class A2e:
         # The api url really should not be changing. But if it does,
         # the code is already set up for it to work.
         # self._api_url = self._read_api(os.path.join(os.getcwd(), '.api-url'))
-        self._api_url = 'https://l77987ttq5.execute-api.us-west-2.amazonaws.com/prod'
+        self._api_url = 'https://70d76sxu18.execute-api.us-west-2.amazonaws.com/prod'
         self._cert = cert
         self._auth = None
 
