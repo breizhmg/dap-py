@@ -1,12 +1,12 @@
+import imp
 import os
 import json
 import base64
+import re
+from numpy import true_divide
 import requests
 from getpass import getpass
-
-
-API_URL = 'https://70d76sxu18.execute-api.us-west-2.amazonaws.com/prod'
-
+from .utils.scrapper import get_api_url
 
 class BadStatusCodeError(RuntimeError):
     def __init__(self, req):
@@ -24,14 +24,19 @@ class BadStatusCodeError(RuntimeError):
         )
 
 
-class A2e:
+class dap:
 
-    def __init__(self, cert=None, quiet=False):
-        '''cert can be an existing certificate
-        or a file path to a .cert file
-        '''
+    def __init__(self,host_URL, cert=None, quiet=False):
+        """initializes connection with DAP server and performs authentication
+
+        Args:
+            host_URL (str): The url of the host, e.g. "livewire.energy.gov"
+            cert (str, optional): path to authentication certificate file. Defaults to None.
+            quiet (bool, optional): suppresses output print statemens. Useful for scripting Defaults to False.
+        """
+        self.host_URL = host_URL
+        self._api_url = get_api_url(self.host_URL)
         self._quiet = quiet
-        self._api_url = API_URL
         self._cert = cert
         self._auth = None
 
@@ -171,15 +176,19 @@ class A2e:
         except:  # noqa: E722
             return False
 
-    def _save_cert(self, path=os.path.join(os.getcwd(), '.cert')):
+    def _save_cert(self, path=None):
         '''Save the cert to path
         '''
+        if path is None:
+            path = os.path.join(os.getcwd(), f'.{self.host_URL}.cert')
         with open(path, 'w') as cf:
             cf.write(self._cert)
 
-    def _read_cert(self, path=os.path.join(os.getcwd(), '.cert')):
+    def _read_cert(self, path=None):
         '''Read from the path
         '''
+        if path is None:
+            path = os.path.join(os.getcwd(), f'.{self.host_URL}.cert')
         try:
             with open(path) as cf:
                 self._cert = cf.read()
@@ -198,22 +207,26 @@ class A2e:
         if not self._auth:
             raise Exception('Auth token cannot be None')
 
+        print(self._auth)
+
         req = requests.post(
             '{}/searches'.format(self._api_url),
             headers=self._auth,
             data=json.dumps({
                 'source': table,
                 'output': 'json',
-                'filter': filter_arg
+                'filter': filter_arg,
+                # 'with_inv_stats_beyond_limit':True
             })
         )
 
         if req.status_code != 200:
+            print(req.text)
             raise BadStatusCodeError(req)
 
         req = req.json()
-        files = [x['Filename'] for x in req]
-        return files
+        # files = [x['Filename'] for x in req]
+        return req
 
     # --------------------------------------------------------------
     # Placing Orders
