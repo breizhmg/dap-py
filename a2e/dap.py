@@ -6,7 +6,7 @@ import re
 from numpy import true_divide
 import requests
 from getpass import getpass
-from .utils.scrapper import get_api_url
+from .utils.scraper import get_api_url
 
 class BadStatusCodeError(RuntimeError):
     def __init__(self, req):
