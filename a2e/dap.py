@@ -239,7 +239,11 @@ class dap:
             raise Exception('Auth token cannot be None')
 
         params = {
-            'files': files,
+            "datasets": {
+                f"{files}": {
+                    "query": {}
+                }
+            }
         }
 
         req = requests.put(
@@ -258,22 +262,47 @@ class dap:
     # Getting download URLs
     # --------------------------------------------------------------
 
-    def _get_download_urls(self, ID):
+    def _get_download_urls(self, ID, page_size=500):
         '''Given order ID, return the download urls
         '''
         if not self._auth:
             raise Exception('Auth token cannot be None')
+        
+        urls = []
+        cursor = None
+
+        while True:
+            new_urls, cursor = self.__get_page_of_download_urls(ID, page_size, cursor)
+
+            urls.extend(new_urls)
+            print(f"added {len(new_urls)} urls.")
+            
+            if cursor is None:
+                print(f"the cursor is null, stopping after {len(urls)} urls")
+                return urls
+            
+            print("cursor was not null, continuing...\n")
+    
+    def __get_page_of_download_urls(self, ID, page_size, cursor=None):
+        '''Return one page of download urls given the order id, cursor and page size
+        '''
+        cursor_param = "" if cursor is None else f"&cursor={cursor}"
+
+        print(f"cursor param: {cursor_param}")
 
         req = requests.get(
-            '{}/orders/{}/urls'.format(self._api_url, ID),
+            '{}/orders/{}/urls?page_size={}{}'.format(self._api_url, ID, page_size, cursor_param),
             headers=self._auth
         )
 
         if req.status_code != 200:
             raise BadStatusCodeError(req)
 
-        urls = json.loads(req.text)['urls']
-        return urls
+        response = json.loads(req.text)
+        urls = response['urls']
+        cursor = response['cursor']
+       
+        return urls, cursor
 
     # --------------------------------------------------------------
     # Download from URLs
