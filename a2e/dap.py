@@ -3,6 +3,7 @@ import os
 import json
 import base64
 import re
+from matplotlib.pyplot import quiver
 from numpy import true_divide
 import requests
 from getpass import getpass
@@ -232,16 +233,28 @@ class dap:
     # Placing Orders
     # --------------------------------------------------------------
 
-    def _place_order(self, dataset, query=""):
+    def _place_order(self, dataset, date_range=[], file_types=[], measurements=[]):
         '''Place an order and return the order ID
         '''
         if not self._auth:
             raise Exception('Auth token cannot be None')
 
+        query = {}
+        if date_range:
+            query['date_time'] = {
+                "between" : date_range
+            }
+
+        if file_types:
+            query['file_type'] = file_types
+
+        if measurements:
+            query['ext1'] = measurements
+
         params = {
             "datasets": {
                 f"{dataset}": {
-                    "query": query if query else {}
+                    "query": query
                 }
             }
         }
@@ -267,7 +280,7 @@ class dap:
         '''
         if not self._auth:
             raise Exception('Auth token cannot be None')
-        
+
         urls = []
         cursor = None
 
@@ -276,13 +289,13 @@ class dap:
 
             urls.extend(new_urls)
             print(f"added {len(new_urls)} urls.")
-            
+
             if cursor is None:
                 print(f"the cursor is null, stopping after {len(urls)} urls")
                 return urls
-            
+
             print("cursor was not null, continuing...\n")
-    
+
     def __get_page_of_download_urls(self, ID, page_size, cursor=None):
         '''Return one page of download urls given the order id, cursor and page size
         '''
@@ -301,7 +314,7 @@ class dap:
         response = json.loads(req.text)
         urls = response['urls']
         cursor = response['cursor']
-       
+
         return urls, cursor
 
     # --------------------------------------------------------------
