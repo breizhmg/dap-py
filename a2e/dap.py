@@ -232,7 +232,7 @@ class dap:
     # Placing Orders
     # --------------------------------------------------------------
 
-    def _place_order(self, files):
+    def _place_order(self, dataset, query=""):
         '''Place an order and return the order ID
         '''
         if not self._auth:
@@ -240,8 +240,8 @@ class dap:
 
         params = {
             "datasets": {
-                f"{files}": {
-                    "query": {}
+                f"{dataset}": {
+                    "query": query if query else {}
                 }
             }
         }
