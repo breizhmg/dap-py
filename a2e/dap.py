@@ -208,8 +208,6 @@ class dap:
         if not self._auth:
             raise Exception('Auth token cannot be None')
 
-        print(self._auth)
-
         req = requests.post(
             '{}/searches'.format(self._api_url),
             headers=self._auth,
@@ -222,7 +220,7 @@ class dap:
         )
 
         if req.status_code != 200:
-            print(req.text)
+            self._print(req.text)
             raise BadStatusCodeError(req)
 
         req = req.json()
@@ -288,20 +286,20 @@ class dap:
             new_urls, cursor = self.__get_page_of_download_urls(ID, page_size, cursor)
 
             urls.extend(new_urls)
-            print(f"added {len(new_urls)} urls.")
+            self._print(f"Added {len(new_urls)} urls.")
 
             if cursor is None:
-                print(f"the cursor is null, stopping after {len(urls)} urls")
+                self._print(f"No more pages of files, stopping after {len(urls)} urls.")
                 return urls
 
-            print("cursor was not null, continuing...\n")
+            self._print("Another page detected, continuing...\n")
 
     def __get_page_of_download_urls(self, ID, page_size, cursor=None):
         '''Return one page of download urls given the order id, cursor and page size
         '''
         cursor_param = "" if cursor is None else f"&cursor={cursor}"
 
-        print(f"cursor param: {cursor_param}")
+        #self._print(f"cursor param: {cursor_param}")
 
         req = requests.get(
             '{}/orders/{}/urls?page_size={}{}'.format(self._api_url, ID, page_size, cursor_param),
@@ -342,7 +340,7 @@ class dap:
             raise Exception('No urls provided')
 
         downloaded_files = []
-
+        self._print(f"Attempting to download {len(urls)} files...")
         # TODO: multi-thread this
         for url in urls:
             try:
@@ -358,7 +356,7 @@ class dap:
                 os.makedirs(download_dir, exist_ok=True)
                 # the final file path
                 filepath = os.path.join(download_dir, filename)
-            except:  # noqa: E722
+            except:
                 self._print(
                     'Incorrectly formmated file path in url: {}'.format(url)
                 )
@@ -377,6 +375,9 @@ class dap:
                     continue
 
             downloaded_files.append(filepath)
+
+        self._print(f"Downloaded {len(downloaded_files)} files!")
+
         return downloaded_files
 
     # --------------------------------------------------------------
