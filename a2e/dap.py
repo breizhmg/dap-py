@@ -1,10 +1,6 @@
-import imp
 import os
 import json
 import base64
-import re
-from matplotlib.pyplot import quiver
-from numpy import true_divide
 import requests
 from getpass import getpass
 from .utils.scraper import get_api_url
@@ -28,13 +24,13 @@ class BadStatusCodeError(RuntimeError):
 class dap:
 
     def __init__(self,host_URL, cert=None, quiet=False):
-        """initializes connection with DAP server and performs authentication
+        '''initializes connection with DAP server and performs authentication
 
         Args:
             host_URL (str): The url of the host, e.g. "livewire.energy.gov"
             cert (str, optional): path to authentication certificate file. Defaults to None.
             quiet (bool, optional): suppresses output print statemens. Useful for scripting Defaults to False.
-        """
+        '''
         self.host_URL = host_URL
         self._api_url = get_api_url(self.host_URL)
         self._quiet = quiet
@@ -108,7 +104,7 @@ class dap:
         user_pass_encoded = base64.b64encode((f"{username}:{password}").encode("utf-8")).decode("ascii")
 
         self._auth = {
-            "Authorization": "Basic {user_pass_encoded}"
+            "Authorization": f"Basic {user_pass_encoded}"
         }
         # TODO: check if the creds are valid
         # without a certificate
@@ -427,7 +423,7 @@ class dap:
             raise Exception('Auth token cannot be None')
 
         req = requests.post(
-            '{self._api_url}/downloads',
+            f'{self._api_url}/downloads',
             headers=self._auth,
             data=json.dumps(filter_arg)
         )
