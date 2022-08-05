@@ -20,8 +20,8 @@ class BadStatusCodeError(RuntimeError):
     def __str__(self):
         return ((
             'Server Returned Bad Status Code\n'
-            'Status Code: {}\n'
-            'Reason: {}').format(self.status_code, self.reason)
+            f'Status Code: {self.status_code}\n'
+            f'Reason: {self.reason}')
         )
 
 
@@ -63,7 +63,7 @@ class dap:
     def _request_cert(self, params):
         '''Request a certificate
         '''
-        req = requests.put('{}/creds'.format(self._api_url), params=params)
+        req = requests.put(f'{self._api_url}/creds', params=params)
 
         if req.status_code != 200:
             raise BadStatusCodeError(req)
@@ -77,10 +77,10 @@ class dap:
         if not self._cert:
             raise ValueError('cert cannot be None')
 
+        # figure this one out lol
+        encoded_cert = base64.b64encode(self._cert.encode("utf-8")).decode("ascii")
         self._auth = {
-            "Authorization": "Cert {}".format(
-                base64.b64encode(self._cert.encode("utf-8")).decode("ascii")
-            )
+            "Authorization": f"Cert {encoded_cert}"
         }
 
     def _request_cert_auth(self, params):
@@ -105,10 +105,10 @@ class dap:
         username = username or input('username: ')
         password = password or getpass('password: ')
 
+        user_pass_encoded = base64.b64encode((f"{username}:{password}").encode("utf-8")).decode("ascii")
+
         self._auth = {
-            "Authorization": "Basic {}".format(base64.b64encode(
-                ("{}:{}".format(username, password)).encode("utf-8")
-            ).decode("ascii"))
+            "Authorization": "Basic {user_pass_encoded}"
         }
         # TODO: check if the creds are valid
         # without a certificate
@@ -164,7 +164,7 @@ class dap:
             'action': 'renew',
         }
 
-        resp = requests.put('{}/creds'.format(self._api_url), params=params)
+        resp = requests.put(f'{self._api_url}/creds', params=params)
 
         if resp.status_code != 200:
             raise BadStatusCodeError(resp)
@@ -209,7 +209,7 @@ class dap:
             raise Exception('Auth token cannot be None')
 
         req = requests.post(
-            '{}/searches'.format(self._api_url),
+            f'{self._api_url}/searches',
             headers=self._auth,
             data=json.dumps({
                 'source': table,
@@ -258,7 +258,7 @@ class dap:
         }
 
         req = requests.put(
-            '{}/orders'.format(self._api_url),
+            f'{self._api_url}/orders',
             headers=self._auth,
             data=json.dumps(params)
         )
@@ -302,7 +302,7 @@ class dap:
         #self._print(f"cursor param: {cursor_param}")
 
         req = requests.get(
-            '{}/orders/{}/urls?page_size={}{}'.format(self._api_url, ID, page_size, cursor_param),
+            f'{self._api_url}/orders/{ID}/urls?page_size={page_size}{cursor_param}',
             headers=self._auth
         )
 
@@ -329,7 +329,7 @@ class dap:
             with open(path, "wb") as fp:
                 for chunk in req.iter_content(chunk_size=1024):
                     fp.write(chunk)
-            self._print("Download successful! {}".format(path))
+            self._print(f"Download successful! {path}")
             break
 
     def _download_from_urls(self, urls, path='/var/tmp/', force=False):
@@ -347,9 +347,8 @@ class dap:
                 a = url.split('/')
                 filename = a[5].split('?')[0]
 
-                dataset = '{}.{}'.format(
-                    a[4], '.'.join(a[5].split('.')[:3])
-                )
+                # piece the name of the dataset together from the url
+                dataset = a[4] + '.' + '.'.join(a[5].split('.')[:3])
 
                 # /var/tmp/wfip2.lidar.z01.b0
                 download_dir = os.path.join(path, dataset)
@@ -358,19 +357,19 @@ class dap:
                 filepath = os.path.join(download_dir, filename)
             except:
                 self._print(
-                    'Incorrectly formmated file path in url: {}'.format(url)
+                    f'Incorrectly formmated file path in url: {url}'
                 )
                 continue
 
             if not force and os.path.exists(filepath):
                 self._print(
-                    'File: {} already exists, skipping...'.format(filepath)
+                    f'File: {filepath} already exists, skipping...'
                 )
             else:
                 try:
                     self._download(url, filepath)
                 except BadStatusCodeError as e:
-                    self._print('Could not download file: {}'.format(filepath))
+                    self._print(f'Could not download file: {filepath}')
                     self._print(e)
                     continue
 
@@ -428,7 +427,7 @@ class dap:
             raise Exception('Auth token cannot be None')
 
         req = requests.post(
-            '{}/downloads'.format(self._api_url),
+            '{self._api_url}/downloads',
             headers=self._auth,
             data=json.dumps(filter_arg)
         )
