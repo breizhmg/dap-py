@@ -38,16 +38,16 @@ class dap:
         self._auth = None
 
         if cert is None:
-            self._read_cert()
+            self.__read_cert()
 
-        if self._cert_is_valid():
-            self._create_cert_auth()
-            self._print('Certificate is setup')
+        if self.__cert_is_valid():
+            self.__create_cert_auth()
+            self.__print('Certificate is setup')
         else:
             self.setup_guest_auth()
-            self._print('No authentication found. Using guest credentials...')
+            self.__print('No authentication found. Using guest credentials...')
 
-    def _print(self, *args, sep='', end='\n', file=None):
+    def __print(self, *args, sep='', end='\n', file=None):
         if not self._quiet:
             for arg in args:
                 print(arg, sep=sep, end=end, file=file)
@@ -56,7 +56,7 @@ class dap:
     # Getting Authenticated
     # --------------------------------------------------------------
 
-    def _request_cert(self, params):
+    def __request_cert(self, params):
         '''Request a certificate
         '''
         req = requests.put(f'{self._api_url}/creds', params=params)
@@ -65,9 +65,9 @@ class dap:
             raise BadStatusCodeError(req)
 
         self._cert = json.loads(req.text)['cert']
-        self._save_cert()
+        self.__save_cert()
 
-    def _create_cert_auth(self):
+    def __create_cert_auth(self):
         '''Given an existing certificate, create an auth token
         '''
         if not self._cert:
@@ -79,19 +79,19 @@ class dap:
             "Authorization": f"Cert {encoded_cert}"
         }
 
-    def _request_cert_auth(self, params):
+    def __request_cert_auth(self, params):
         '''Requests certificate and creates auth token
         '''
         try:
-            self._request_cert(params)
-            self._create_cert_auth()
+            self.__request_cert(params)
+            self.__create_cert_auth()
         except BadStatusCodeError:
-            self._print('Incorrect credentials')
+            self.__print('Incorrect credentials')
             return
         except Exception as e:
-            self._print(e)
+            self.__print(e)
             return
-        self._print('Success!')
+        self.__print('Success!')
         return True
 
     def setup_basic_auth(self, username=None, password=None):
@@ -119,8 +119,8 @@ class dap:
         '''Given username and password request a
         cert token and generate an auth code
         '''
-        if self._cert_is_valid():
-            self._print('Valid certificate already created')
+        if self.__cert_is_valid():
+            self.__print('Valid certificate already created')
             return True
 
         params = {
@@ -128,8 +128,8 @@ class dap:
             'password': password or getpass('password: '),
         }
 
-        self._request_cert_auth(params)
-        return self._cert_is_valid()
+        self.__request_cert_auth(params)
+        return self.__cert_is_valid()
 
     def setup_two_factor_auth(
         self, username=None, password=None, authcode=None
@@ -146,10 +146,10 @@ class dap:
             'authcode': authcode or getpass('authcode: '),
         }
 
-        self._request_cert_auth(params)
-        return self._cert_is_valid()
+        self.__request_cert_auth(params)
+        return self.__cert_is_valid()
 
-    def _renew_cert(self):
+    def __renew_cert(self):
         '''Renews the certificate
         '''
         if not self._cert:
@@ -167,13 +167,13 @@ class dap:
 
         return 'cert' in resp.json()
 
-    def _cert_is_valid(self):
+    def __cert_is_valid(self):
         try:
-            return self._renew_cert()
+            return self.__renew_cert()
         except:  # noqa: E722
             return False
 
-    def _save_cert(self, path=None):
+    def __save_cert(self, path=None):
         '''Save the cert to path
         '''
         if path is None:
@@ -181,7 +181,7 @@ class dap:
         with open(path, 'w') as cf:
             cf.write(self._cert)
 
-    def _read_cert(self, path=None):
+    def __read_cert(self, path=None):
         '''Read from the path
         '''
         if path is None:
@@ -216,7 +216,7 @@ class dap:
         )
 
         if req.status_code != 200:
-            self._print(req.text)
+            self.__print(req.text)
             raise BadStatusCodeError(req)
 
         req = req.json()
@@ -227,7 +227,7 @@ class dap:
     # Placing Orders
     # --------------------------------------------------------------
 
-    def _place_order(self, dataset, date_range=[], file_types=[], measurements=[]):
+    def __place_order(self, dataset, date_range, file_types, measurements):
         '''Place an order and return the order ID
         '''
         if not self._auth:
@@ -269,7 +269,7 @@ class dap:
     # Getting download URLs
     # --------------------------------------------------------------
 
-    def _get_download_urls(self, ID, page_size=500):
+    def __get_download_urls(self, ID, page_size=500):
         '''Given order ID, return the download urls
         '''
         if not self._auth:
@@ -282,13 +282,13 @@ class dap:
             new_urls, cursor = self.__get_page_of_download_urls(ID, page_size, cursor)
 
             urls.extend(new_urls)
-            self._print(f"Added {len(new_urls)} urls.")
+            self.__print(f"Added {len(new_urls)} urls.")
 
             if cursor is None:
-                self._print(f"No more pages of files, stopping after {len(urls)} urls.")
+                self.__print(f"No more pages of files, stopping after {len(urls)} urls.")
                 return urls
 
-            self._print("Another page detected, continuing...\n")
+            self.__print("Another page detected, continuing...\n")
 
     def __get_page_of_download_urls(self, ID, page_size, cursor=None):
         '''Return one page of download urls given the order id, cursor and page size
@@ -315,7 +315,7 @@ class dap:
     # Download from URLs
     # --------------------------------------------------------------
 
-    def _download(self, url, path):
+    def __download(self, url, path):
         ''' Actually download the files
         '''
         req = requests.get(url, stream=True)
@@ -325,10 +325,10 @@ class dap:
             with open(path, "wb") as fp:
                 for chunk in req.iter_content(chunk_size=1024):
                     fp.write(chunk)
-            self._print(f"Download successful! {path}")
+            self.__print(f"Download successful! {path}")
             break
 
-    def _download_from_urls(self, urls, path='/var/tmp/', force=False):
+    def __download_from_urls(self, urls, path='/var/tmp/', force=False):
         '''Given a list of urls, download them
         Returns the successfully downloaded file paths
         '''
@@ -336,7 +336,7 @@ class dap:
             raise Exception('No urls provided')
 
         downloaded_files = []
-        self._print(f"Attempting to download {len(urls)} files...")
+        self.__print(f"Attempting to download {len(urls)} files...")
         # TODO: multi-thread this
         for url in urls:
             try:
@@ -346,32 +346,31 @@ class dap:
                 # piece the name of the dataset together from the url
                 dataset = a[4] + '.' + '.'.join(a[5].split('.')[:3])
 
-                # /var/tmp/wfip2.lidar.z01.b0
                 download_dir = os.path.join(path, dataset)
                 os.makedirs(download_dir, exist_ok=True)
                 # the final file path
                 filepath = os.path.join(download_dir, filename)
             except:
-                self._print(
+                self.__print(
                     f'Incorrectly formmated file path in url: {url}'
                 )
                 continue
 
             if not force and os.path.exists(filepath):
-                self._print(
+                self.__print(
                     f'File: {filepath} already exists, skipping...'
                 )
             else:
                 try:
-                    self._download(url, filepath)
+                    self.__download(url, filepath)
                 except BadStatusCodeError as e:
-                    self._print(f'Could not download file: {filepath}')
-                    self._print(e)
+                    self.__print(f'Could not download file: {filepath}')
+                    self.__print(e)
                     continue
 
             downloaded_files.append(filepath)
 
-        self._print(f"Downloaded {len(downloaded_files)} files!")
+        self.__print(f"Downloaded {len(downloaded_files)} files!")
 
         return downloaded_files
 
@@ -379,33 +378,34 @@ class dap:
     # Place Order and Download
     # --------------------------------------------------------------
 
-    def download_files(self, files, path='/var/tmp/', force=False):
+    def download_files(self, dataset, date_range=[], file_types=[],
+                        measurements=[], path='/var/tmp/', force=False):
         '''places order, gets download urls, downloads files
         '''
-        if not files:
-            self._print('No files provided')
+        if not dataset:
+            self.__print('No dataset provided')
             return
 
         try:
-            ID = self._place_order(files)
+            ID = self.__place_order(dataset, date_range, file_types, measurements)
         except BadStatusCodeError as e:
-            self._print('Could not place order')
-            self._print(e)
+            self.__print('Could not place order')
+            self.__print(e)
             return
 
         try:
-            urls = self._get_download_urls(ID)
+            urls = self.__get_download_urls(ID)
         except BadStatusCodeError as e:
-            self._print('Could not get download urls')
-            self._print(e)
+            self.__print('Could not get download urls')
+            self.__print(e)
             return
 
         try:
-            downloaded_files = self._download_from_urls(
+            downloaded_files = self.__download_from_urls(
                 urls, path=path, force=force
             )
         except Exception as e:
-            self._print(e)
+            self.__print(e)
             return
 
         return downloaded_files
@@ -414,7 +414,7 @@ class dap:
     #  Download All matching Search
     # --------------------------------------------------------------
 
-    def _search_for_urls(self, filter_arg):
+    def __search_for_urls(self, filter_arg):
         '''uses the alternative api /downloads method
         to search the inventory table and return
         the download urls to files in s3
@@ -439,27 +439,27 @@ class dap:
         the search without placing orders and downloading from there
         '''
         try:
-            urls = self._search_for_urls({
+            urls = self.__search_for_urls({
                 'output': 'json',
                 'filter': filter_arg,
             })
         except BadStatusCodeError as e:
-            self._print('Could not find download urls')
-            self._print(e)
+            self.__print('Could not find download urls')
+            self.__print(e)
             return
         except Exception as e:
-            self._print(e)
+            self.__print(e)
             return
 
         if not urls:
-            self._print('No files found')
+            self.__print('No files found')
             return
 
         try:
-            downloaded_files = self._download_from_urls(
+            downloaded_files = self.__download_from_urls(
                 urls, path=path, force=force
             )
         except Exception as e:
-            self._print(e)
+            self.__print(e)
             return
         return downloaded_files
