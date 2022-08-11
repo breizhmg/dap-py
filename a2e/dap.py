@@ -23,7 +23,7 @@ class BadStatusCodeError(RuntimeError):
 
 class dap:
 
-    def __init__(self,host_URL, cert=None, quiet=False):
+    def __init__(self,host_URL, cert=None, quiet=False, spp=False):
         '''initializes connection with DAP server and performs authentication
 
         Args:
@@ -32,7 +32,11 @@ class dap:
             quiet (bool, optional): suppresses output print statemens. Useful for scripting Defaults to False.
         '''
         self.host_URL = host_URL
-        self._api_url = get_api_url(self.host_URL)
+        if spp:
+            self._api_url = "https://13tl7mor8f.execute-api.us-west-2.amazonaws.com/prod"
+        else:
+            self._api_url = get_api_url(self.host_URL)
+
         self._quiet = quiet
         self._cert = cert
         self._auth = None
@@ -73,7 +77,6 @@ class dap:
         if not self._cert:
             raise ValueError('cert cannot be None')
 
-        # figure this one out lol
         encoded_cert = base64.b64encode(self._cert.encode("utf-8")).decode("ascii")
         self._auth = {
             "Authorization": f"Cert {encoded_cert}"
@@ -216,7 +219,8 @@ class dap:
         )
 
         if req.status_code != 200:
-            self.__print(req.text)
+            self.__print(f"Got a non-ok status code: {req.status_code}")
+            self.__print(f"Request output: {req.text}")
             raise BadStatusCodeError(req)
 
         req = req.json()
@@ -227,7 +231,7 @@ class dap:
     # Placing Orders
     # --------------------------------------------------------------
 
-    def __place_order(self, dataset, date_range, file_types, measurements):
+    def __place_order(self, dataset, date_range=[], file_types=[], measurements=[]):
         '''Place an order and return the order ID
         '''
         if not self._auth:
