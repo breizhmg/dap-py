@@ -202,7 +202,6 @@ class dap:
 
     def search(self, filter_arg, table='Inventory'):
         '''Search the table and return the matching file paths
-        https://github.com/a2edap/tools/tree/master/lambda/api/get-info
         '''
         if not self._auth:
             raise Exception('Auth token cannot be None')
