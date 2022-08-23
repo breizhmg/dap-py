@@ -1,40 +1,40 @@
-# a2e Package
+# Dap_py Package
 
-This package contains the A2e module and wraps all of the other packages to make importing modules easy. Each of the sub-packages are explained in detail in their own README files. For more information on the A2e module, keep reading.
+This package contains the dap_py module and wraps all other packages to make importing easy. Information on the plotting module is in plot/README.md. For more information on the dap_py module, keep reading.
 
-## A2e Module
+## Dap_py Module
 
-The A2e module is a high-level interface that allows the programmer to use our API to authenticate, search, and download the data they want in very few lines of code.
+The dap_py module is a high-level interface that allows the programmer to use our API to authenticate, search, and download the data they want in very few lines of code.
 
 ## Setup
+
+The following examples demonstrate how to download data via A2e.
 
 First, import the module:
 
 ```python
-from a2e import A2e
+from dap_py import dap
 ```
 
-Then, create an instance of the A2e class:
+Then, create an instance of the `dap` class. The constructor takes one required argument: the hostname of the service from which you want to download data.
 
 ```python
-a2e = A2e.A2e()
+a2e = dap('a2e.energy.gov')
 ```
 
-And that's it! Setup is complete. All future methods will revolve around this `a2e` object. Alternatively, the constructor accepts two optional arguments: `cert` and `quiet`. The cert argument takes in a cert string. The quiet argument when set to `True` disables output. Useful for scripting.
+And that's it! Setup is complete. All future methods will revolve around this `a2e` object. Alternatively, the constructor accepts two optional arguments: `cert` and `quiet`. The cert argument takes the path to a certificate. The quiet argument disables output when set to `True`, which is useful for scripting.
 
-### Authentication
+## Authentication
 
-Authentication is very simple with this module. This module supports both __basic__ and __certificate__ authentication protocols. The basic methods do not use a certificate, expire more quickly, and do not support two-factor authentication. The other methods in this module will not work without proper authentication. When an A2e instance is created, the constructor looks for any existing certificates in `~/.cert` and tries to renews it. Alternatively, a certificate can be passed into the constructor:
+Authentication is simple. This module supports both __basic__ and __certificate__ authentication protocols. The basic method does not use a certificate, expires more quickly, and does not support two-factor authentication. The other methods in this module will not work without proper authentication. If a path to a certificate is not provided, the constructor will attempt to find a certificate named `.<host name>.cert` in the top-level dap-py directory.
+
+Providing a path to an existing certificate to dap:
 
 ```python
-a2e = A2e.A2e(<cert>)
+a2e = dap('a2e.energy.gov', '/path/to/a2e.energy.gov.cert')
 ```
 
-If the certificate is valid, it will be renewed and written to the `~/.cert` file. Otherwise, it defaults to basic guest authentication. The following are the different authentication methods:
-
-#### `a2e.setup_guest_auth()`
-
-Sets up basic authentication for a guest user. This is identical to setting up basic authentication with the username and password `guest`.
+If the certificate is valid, the module will renew it. Otherwise, the constructor will set up guest credentials. If you don't have a valid certificate, you will have to create one via one of the following authentication methods:
 
 #### `a2e.setup_basic_auth(username=None, password=None)`
 
@@ -42,58 +42,104 @@ Sets up basic authentication with a username and password. The arguments are opt
 
 #### `a2e.setup_cert_auth(username=None, password=None)`
 
-Similar to the method above, but will request a certificate instead of using basic authentication. The certificate is stored in the `~./cert` file. Will prompt user for omitted arguments.
+Similar to the method above, but will request a certificate instead of basic authentication. The certificate is stored in a file named `.<host name>.cert`, for example `.a2e.energy.gov.cert`.
 
-#### `a2e.setup_two_factor_auth(username=None, password=None, email=None, authcode=None)`
+#### `a2e.setup_two_factor_auth(username=None, password=None, authcode=None)`
 
-Similar to the method above, but uses two-factor authentication. The authcode is the 6 digit number from Google Authenticator. This is the highest authentication level available. The certificate is stored in the `~./cert` file. Will prompt user for omitted arguments.
+Similar to the method above, but uses two-factor authentication. The authcode is the 6-digit password code from Google Authenticator. This is the highest authentication level available. The again stores the certificate in a `.<host name>.cert` file.
 
 ### Searching for Files
 
-Searching is straight-forward with this module. Simple call this method and a list of files will be returned.
-
-#### `a2e.search(filter_arg, table='Inventory')`
-
-Query the respective table in AWS with the given filter argument. An example filter argument is shown below:
+To search for files, one must first construct a filter. Below is an example filter.
 
 ```python
-filter_arg = {
+filter = {
     'Dataset': 'wfip2/lidar.z01.b0',
     'date_time': {
         'between': ['20160101000000', '20160104000000']
     },
-    'file_type': 'nc',
+    'file_type': 'nc'
 }
 ```
-
 The documentation for constructing the filter argument can be found [here](https://github.com/a2edap/dap-py/blob/master/a2e/download-README.md).
+
+Now simply call this function:
+
+#### `a2e.search(filter_arg, table='inventory', latest=True)`
+
+The `'inventory'` option returns a list of files that match the filter. Filters that return large lists of files may time out. To avoid this, you can request an accounting of files by calling the function with `table='stats'`.
+
+By default, only the latest files are considered for the search. If you'd like to include older files, you can use `latest=False`. Old files may not be downloadable.
+
 
 ### Downloading Files
 
-There are two ways to download files using this module. The first places an order for the files, gets the download urls, and downloads the files to the provided path. The second uses the `/downloads` api method to search for the files and download them to the provided path in one step. The latter is dangerous if you don't know how many files you are about to download!
+There are three functions you can use to download files using this module.
 
-#### `a2e.download_files(files, path='/var/tmp/', force=False)`
+#### Download with a list of files
 
-Provided with a list of files, place an order for the files and download them. The path specifies the directory the files will download to, and the force flag determines whether files will be overriden. By default, if a file already exists, it will not be downloaded. Does not work using guest credentials because guests cannot place an order.
+An inventory search returns a list of files. These can be provided to the following function:
 
-#### `a2e.download_search(filter_arg, path='/var/tmp/', force=False)`
+#### `a2e.download_files(files, path='/var/tmp/', replace=False)`
 
-Provided with a [filter argument](https://github.com/a2edap/dap-py/blob/master/a2e/download-README.md), search the Inventory table and download the files in s3. I heard a rumor through the grapevine that only files in s3 will be downloaded, so if you think some data could be someone else, use the other download method.
+The path specifies where the module will download files. The replace flag determines whether the module should replace files that already exist in the download directory. By default, the module will not replace existing files.
 
-## Example
+##### Example
 
 ```python
-from A2e import A2e
-
-a2e = A2e.A2e()
-
-files = a2e.search({
-    'Dataset': 'wfip2/lidar.z01.b0',
+filter = {
+    'Dataset': 'wfip2/lidar.z04.a0',
     'date_time': {
-        'between': ['20160101000000', '20160104000000']
+        'between': ['20151001000000', '20151004000000']
     },
-    'file_type': 'nc',
-})
+    'file_type': 'nc'
+}
 
-a2e.download_files(files, force=True)
+file_names = a2e.search(filter, table='Inventory')
+files = a2e.download_files(file_names)
+```
+
+All the download functions return a list of paths to the downloaded files.
+
+#### Download files directly from a search
+
+Inventory searches fail with large numbers of files. This method will avoid creating a list of files and instead download using a search query. The module will prompt you to confirm that you want to download the files, although it won't say how much space the files will take up, so caution is recommended.
+
+The dap function is:
+#### `a2e.download_search(filter_arg, path='/var/tmp/', force=False)`
+
+##### Example
+
+```python
+filter = {
+    'Dataset': 'wfip2/lidar.z04.a0',
+    'date_time': {
+        'between': ['20151001000000', '20151004000000']
+    },
+    'file_type': 'nc'
+}
+
+files = a2e.download_search(filter)
+```
+
+Provided with a [filter argument](https://github.com/a2edap/dap-py/blob/master/a2e/download-README.md), search the Inventory table and download the files in s3. I heard a rumor through the grapevine that only files in s3 will be downloaded, so if you think some data could be someone else, use the next download method.
+
+#### Download by placing an order
+
+Placing an order is required to download files that are not in s3. The following function takes a filter like `download_search()` but places an order before downloading.
+
+#### `a2e.download_with_order(filter_arg, path='/var/tmp/', force=False)`
+
+Like `download_search()`, the code will prompt you to confirm that you want to download the files.
+
+```python
+filter = {
+    'Dataset': 'wfip2/lidar.z04.a0',
+    'date_time': {
+        'between': ['20151001000000', '20151004000000']
+    },
+    'file_type': 'nc'
+}
+
+a2e.download_with_order(filter)
 ```
