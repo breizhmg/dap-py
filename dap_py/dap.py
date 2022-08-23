@@ -41,15 +41,14 @@ class dap:
         self._cert = cert
         self._auth = None
 
-        if cert is None:
-            self.__read_cert()
+        self.__read_cert(cert)
 
         if self.__cert_is_valid():
             self.__create_cert_auth()
             self.__print('Certificate is setup')
         else:
             self.setup_guest_auth()
-            self.__print('No authentication found. Using guest credentials...')
+            self.__print('Certificate not found or was invalid. Using guest credentials...')
 
     def __print(self, *args, sep='', end='\n', file=None):
         if not self._quiet:
@@ -188,11 +187,14 @@ class dap:
         '''Read from the path
         '''
         if path is None:
+            self.__print(f"Looking for a certificate named .{self.host_URL}.cert...")
             path = os.path.join(os.getcwd(), f'.{self.host_URL}.cert')
         try:
             with open(path) as cf:
+                self.__print(f"Found certificate: {path}")
                 self._cert = cf.read()
         except FileNotFoundError:
+            self.__print(f"File not found {path}")
             return False
         return True
 
@@ -200,11 +202,13 @@ class dap:
     # Search for Filenames
     # --------------------------------------------------------------
 
-    def search(self, filter_arg, table='Inventory'):
+    def search(self, filter_arg, table='Inventory', latest=True):
         '''Search the table and return the matching file paths
         '''
         if not self._auth:
             raise Exception('Auth token cannot be None')
+
+        filter_arg['latest'] = latest
 
         req = requests.post(
             f'{self._api_url}/searches',
@@ -212,7 +216,7 @@ class dap:
             data=json.dumps({
                 'source': table,
                 'output': 'json',
-                'filter': filter_arg,
+                'filter': filter_arg
                 # 'with_inv_stats_beyond_limit':True
             })
         )
@@ -230,28 +234,16 @@ class dap:
     # Placing Orders
     # --------------------------------------------------------------
 
-    def __place_order(self, dataset, date_range=[], file_types=[], measurements=[]):
+    def __place_order(self, dataset, filter_arg):
         '''Place an order and return the order ID
         '''
         if not self._auth:
             raise Exception('Auth token cannot be None')
 
-        query = {}
-        if date_range:
-            query['date_time'] = {
-                "between" : date_range
-            }
-
-        if file_types:
-            query['file_type'] = file_types
-
-        if measurements:
-            query['ext1'] = measurements
-
         params = {
             "datasets": {
                 f"{dataset}": {
-                    "query": query
+                    "query": filter_arg
                 }
             }
         }
@@ -331,7 +323,7 @@ class dap:
             self.__print(f"Download successful! {path}")
             break
 
-    def __download_from_urls(self, urls, path='/var/tmp/', force=False):
+    def __download_from_urls(self, urls, path='/var/tmp/', replace=False):
         '''Given a list of urls, download them
         Returns the successfully downloaded file paths
         '''
@@ -359,7 +351,7 @@ class dap:
                 )
                 continue
 
-            if not force and os.path.exists(filepath):
+            if not replace and os.path.exists(filepath):
                 self.__print(
                     f'File: {filepath} already exists, skipping...'
                 )
@@ -381,31 +373,56 @@ class dap:
     # Place Order and Download
     # --------------------------------------------------------------
 
-    def download_files(self, dataset, date_range=[], file_types=[],
-                        measurements=[], path='/var/tmp/', force=False):
-        '''places order, gets download urls, downloads files
-        '''
-        if not dataset:
-            self.__print('No dataset provided')
-            return
+    def download_files(self, files, path="/var/tmp/", replace=False):
 
-        try:
-            ID = self.__place_order(dataset, date_range, file_types, measurements)
-        except BadStatusCodeError as e:
-            self.__print('Could not place order')
-            self.__print(e)
-            return
+        if not files:
+            self.__print("No files provided.")
 
-        try:
-            urls = self.__get_download_urls(ID)
-        except BadStatusCodeError as e:
-            self.__print('Could not get download urls')
-            self.__print(e)
-            return
+        if not self._auth:
+            self.__print("")
+
+        filter = {
+            'output': 'json',
+            'filter' : None,
+        }
+
+        urls = []
+        found = 0
+        not_found = 0
+        for f in files:
+            filename = f['Filename']
+
+            filter['filter'] = f
+
+            req = requests.post(
+                f'{self._api_url}/downloads',
+                headers=self._auth,
+                data = json.dumps(filter)
+            )
+
+            if req.status_code != 200:
+                raise BadStatusCodeError(req)
+
+            url = json.loads(req.text)['urls'].values()
+
+            # this should only return one url
+            if len(url) != 1:
+                self.__print(f"found {len(url)} urls instead of one for file {filename}")
+                not_found += 1
+            else:
+                self.__print(f"found url for file: {filename}")
+                found += 1
+
+            # use extend in case somehow multiple files were found, this might not be necessary
+            urls.extend(url)
+
+        self.__print(f"found {found} files.")
+        if not_found > 0:
+            self.__print(f"Urls could not be found for {not_found} files, these files are most likely not hosted on s3 and should be downloaded via <>.")
 
         try:
             downloaded_files = self.__download_from_urls(
-                urls, path=path, force=force
+                urls, path=path, replace=replace
             )
         except Exception as e:
             self.__print(e)
@@ -437,7 +454,7 @@ class dap:
         urls = json.loads(req.text)['urls'].values()
         return urls
 
-    def download_search(self, filter_arg, path='/var/tmp/', force=False):
+    def download_search(self, filter_arg, path='/var/tmp/', replace=False):
         '''Uses the /downloads api method to download straight from
         the search without placing orders and downloading from there
         '''
@@ -458,11 +475,74 @@ class dap:
             self.__print('No files found')
             return
 
+        download = self.__proceed_prompt(f"Download {len(urls)} files (y/n)? ")
+
+        if download:
+            try:
+                downloaded_files = self.__download_from_urls(
+                    urls, path=path, replace=replace
+                )
+            except Exception as e:
+                self.__print(e)
+                return
+        else:
+            return
+
+        return downloaded_files
+
+    def download_with_order(self, query, path='/var/tmp', replace=False, prompt=True):
+        ''' Place an order based on a query,
+        prompt the user to confirm they want to download the associated files,
+        then download them if so.
+        '''
+
+        dataset = query['Dataset']
+
+        if not dataset:
+            raise Exception("No dataset provided!")
+
+        self.__print("Attempting to place an order for the data...")
+
         try:
-            downloaded_files = self.__download_from_urls(
-                urls, path=path, force=force
-            )
-        except Exception as e:
+            ID = self.__place_order(dataset, query)
+        except BadStatusCodeError as e:
+            self.__print('Could not place order')
             self.__print(e)
             return
+
+        self.__print(f"Order placed! ID: {ID}")
+        self.__print("Attempting to fetch download urls...")
+
+        try:
+            urls = self.__get_download_urls(ID)
+        except BadStatusCodeError as e:
+            self._print('Could not get download urls')
+            self._print(e)
+            return
+
+        self.__print("Urls found!")
+
+        download = self.__proceed_prompt(f"Download {len(urls)} files (y/n)? ")
+
+        if download:
+            try:
+                downloaded_files = self.__download_from_urls(
+                    urls, path=path, replace=replace
+                )
+            except Exception as e:
+                self._print(e)
+                return
+        else:
+            return
+
         return downloaded_files
+
+    def __proceed_prompt(self, prompt):
+        while True:
+            proceed = input(prompt)
+            if proceed.lower() not in ('y', 'n'):
+                print("Enter either y or n")
+            else:
+                break
+
+        return proceed == 'y'
