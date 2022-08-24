@@ -67,7 +67,7 @@ Now simply call this function:
 
 #### `a2e.search(filter_arg, table='inventory', latest=True)`
 
-The `'inventory'` option returns a list of files that match the filter. Filters that return large lists of files may time out. To avoid this, you can request an accounting of files by calling the function with `table='stats'`.
+The `'inventory'` option returns a list of files that match the filter. Filters that return large lists of files may time out, or return an empty list (despite the query matching many files). To avoid this, you can request an accounting of files by calling the function with `table='stats'`.
 
 By default, only the latest files are considered for the search. If you'd like to include older files, you can use `latest=False`. Old files may not be downloadable.
 
