@@ -379,7 +379,7 @@ class dap:
             self.__print("No files provided.")
 
         if not self._auth:
-            self.__print("")
+            raise Exception('Auth token cannot be None')
 
         filter = {
             'output': 'json',
