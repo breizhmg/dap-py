@@ -1,4 +1,4 @@
-# downloads
+# Downloads
 
 ## About
 Method: `POST`
