@@ -208,7 +208,21 @@ class dap:
         if not self._auth:
             raise Exception('Auth token cannot be None')
 
-        filter_arg['latest'] = latest
+        if 'livewire' not in self.host_URL:
+            filter_arg['latest'] = latest
+
+        if 'test' in self.host_URL and not table.endswith('-test'):
+            self.__print("You're trying to access data on a test server, but the table name doesn't include 'test', adding it.")
+            table += '-test'
+
+        # the dataset can be the only key in the filter
+        if 'test' in self.host_URL and len(filter_arg.keys()) > 1:
+            if 'Dataset' in filter_arg.keys():
+                self.__print("A dataset can be the only parameter in the filter for a test server, removing the extras.")
+                filter_arg = {'Dataset' : filter_arg['Dataset']}
+            else:
+                self.__print("No dataset provided.")
+                return
 
         req = requests.post(
             f'{self._api_url}/searches',
