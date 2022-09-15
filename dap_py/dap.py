@@ -432,7 +432,7 @@ class dap:
 
         self.__print(f"found {found} files.")
         if not_found > 0:
-            self.__print(f"Urls could not be found for {not_found} files, these files are most likely not hosted on s3 and should be downloaded via <>.")
+            self.__print(f"Urls could not be found for {not_found} files, these files are most likely not hosted on s3 and should be downloaded via download_with_order().")
 
         try:
             downloaded_files = self.__download_from_urls(
