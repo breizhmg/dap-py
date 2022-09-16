@@ -387,7 +387,7 @@ class dap:
     # Place Order and Download
     # --------------------------------------------------------------
 
-    def download_files(self, files, path="/var/tmp/", replace=False):
+    def download_files(self, files, path="/var/tmp/", replace=False, prompt=True):
 
         if not files:
             self.__print("No files provided.")
@@ -434,12 +434,19 @@ class dap:
         if not_found > 0:
             self.__print(f"Urls could not be found for {not_found} files, these files are most likely not hosted on s3 and should be downloaded via download_with_order().")
 
-        try:
-            downloaded_files = self.__download_from_urls(
-                urls, path=path, replace=replace
-            )
-        except Exception as e:
-            self.__print(e)
+        download = True
+        if prompt:
+            download = self.__proceed_prompt(f"Download {len(urls)} files (y/n)? ")
+
+        if download:
+            try:
+                downloaded_files = self.__download_from_urls(
+                    urls, path=path, replace=replace
+                )
+            except Exception as e:
+                self.__print(e)
+                return
+        else:
             return
 
         return downloaded_files
@@ -468,7 +475,7 @@ class dap:
         urls = json.loads(req.text)['urls'].values()
         return urls
 
-    def download_search(self, filter_arg, path='/var/tmp/', replace=False):
+    def download_search(self, filter_arg, path='/var/tmp/', replace=False, prompt=True):
         '''Uses the /downloads api method to download straight from
         the search without placing orders and downloading from there
         '''
@@ -489,7 +496,9 @@ class dap:
             self.__print('No files found')
             return
 
-        download = self.__proceed_prompt(f"Download {len(urls)} files (y/n)? ")
+        download = True
+        if prompt:
+            download = self.__proceed_prompt(f"Download {len(urls)} files (y/n)? ")
 
         if download:
             try:
@@ -536,7 +545,9 @@ class dap:
 
         self.__print("Urls found!")
 
-        download = self.__proceed_prompt(f"Download {len(urls)} files (y/n)? ")
+        download = True
+        if prompt:
+            download = self.__proceed_prompt(f"Download {len(urls)} files (y/n)? ")
 
         if download:
             try:
