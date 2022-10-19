@@ -1,6 +1,7 @@
 import os
 import json
 import base64
+from pathlib import Path
 import requests
 from getpass import getpass
 from .utils.scraper import get_api_url
@@ -23,13 +24,17 @@ class BadStatusCodeError(RuntimeError):
 
 class dap:
 
-    def __init__(self,host_URL, cert=None, quiet=False, spp=False):
+    def __init__(self, host_URL, cert_path=None, save_cert_dir=str(Path.home() / "dap/certs/"),
+                 download_dir = str(Path.home() / "dap/downloads"), quiet=False, spp=False):
         '''initializes connection with DAP server and performs authentication
 
         Args:
             host_URL (str): The url of the host, e.g. "livewire.energy.gov"
             cert (str, optional): path to authentication certificate file. Defaults to None.
+            save_cert_dir (str, optional): Path to directory where certificates are stored. Defaults to ~/dap/certs/
+            download_dir (str, optional): Path to directory where files will be downloaded. Defaults to ~/dap/downloads/
             quiet (bool, optional): suppresses output print statemens. Useful for scripting Defaults to False.
+            spp (bool, optional): If this is a dap for the Solid Phase Processing data.
         '''
         self.host_URL = host_URL
         if spp:
@@ -38,10 +43,24 @@ class dap:
             self._api_url = get_api_url(self.host_URL)
 
         self._quiet = quiet
-        self._cert = cert
+        self._cert_path = cert_path
+        self._cert = None
         self._auth = None
 
-        self.__read_cert(cert)
+        # set the certificate and download paths.
+        if "DAP_CERT_DIR" in os.environ:
+            self.save_cert_dir = os.environ["DAP_CERT_DIR"]
+        else:
+            self.save_cert_dir = save_cert_dir
+
+        if "DAP_DOWNLOAD_DIR" in os.environ:
+            self.download_dir = os.environ["DAP_DOWNLOAD_DIR"]
+        else:
+            self.download_dir = download_dir
+
+        self.__create_dirs()
+
+        self.__read_cert()
 
         if self.__cert_is_valid():
             self.__create_cert_auth()
@@ -54,6 +73,11 @@ class dap:
         if not self._quiet:
             for arg in args:
                 print(arg, sep=sep, end=end, file=file)
+
+
+    def __create_dirs(self):
+        Path(self.save_cert_dir).mkdir(parents=True, exist_ok=True)
+        Path(self.download_dir).mkdir(parents=True, exist_ok=True)
 
     # --------------------------------------------------------------
     # Getting Authenticated
@@ -70,6 +94,7 @@ class dap:
         self._cert = json.loads(req.text)['cert']
         self.__save_cert()
 
+
     def __create_cert_auth(self):
         '''Given an existing certificate, create an auth token
         '''
@@ -80,6 +105,7 @@ class dap:
         self._auth = {
             "Authorization": f"Cert {encoded_cert}"
         }
+
 
     def __request_cert_auth(self, params):
         '''Requests certificate and creates auth token
@@ -95,6 +121,7 @@ class dap:
             return
         self.__print('Success!')
         return True
+
 
     def setup_basic_auth(self, username=None, password=None):
         '''Create the auth token without a certificate
@@ -112,10 +139,12 @@ class dap:
         # without a certificate
         # should we try a query? low priority
 
+
     def setup_guest_auth(self):
         '''Just sets up basic auth as a guest
         '''
         self.setup_basic_auth('guest', 'guest')
+
 
     def setup_cert_auth(self, username=None, password=None):
         '''Given username and password request a
@@ -132,6 +161,7 @@ class dap:
 
         self.__request_cert_auth(params)
         return self.__cert_is_valid()
+
 
     def setup_two_factor_auth(
         self, username=None, password=None, authcode=None
@@ -151,6 +181,7 @@ class dap:
         self.__request_cert_auth(params)
         return self.__cert_is_valid()
 
+
     def __renew_cert(self):
         '''Renews the certificate
         '''
@@ -169,32 +200,36 @@ class dap:
 
         return 'cert' in resp.json()
 
+
     def __cert_is_valid(self):
         try:
             return self.__renew_cert()
         except:  # noqa: E722
             return False
 
-    def __save_cert(self, path=None):
+
+    def __save_cert(self):
         '''Save the cert to path
         '''
-        if path is None:
-            path = os.path.join(os.getcwd(), f'.{self.host_URL}.cert')
-        with open(path, 'w') as cf:
-            cf.write(self._cert)
+        if self._cert_path is not None:
+            with open(self._cert_path, 'w') as cf:
+                cf.write(self._cert)
+                self.__print(f"Saved certificate as {self._cert_path}")
 
-    def __read_cert(self, path=None):
+
+    def __read_cert(self):
         '''Read from the path
         '''
-        if path is None:
-            self.__print(f"Looking for a certificate named .{self.host_URL}.cert...")
-            path = os.path.join(os.getcwd(), f'.{self.host_URL}.cert')
+        if self._cert_path is None:
+            # check for a cert in the save directory
+            self._cert_path = Path(self.save_cert_dir) / f".{self.host_URL}.cert"
+            self.__print(f"Looking for a certificate: {self._cert_path}...")
         try:
-            with open(path) as cf:
-                self.__print(f"Found certificate: {path}")
+            with open(self._cert_path) as cf:
+                self.__print(f"Found certificate: {self._cert_path}")
                 self._cert = cf.read()
         except FileNotFoundError:
-            self.__print(f"File not found {path}")
+            self.__print(f"File not found {self._cert_path}")
             return False
         return True
 
@@ -299,6 +334,7 @@ class dap:
 
             self.__print("Another page detected, continuing...\n")
 
+
     def __get_page_of_download_urls(self, ID, page_size, cursor=None):
         '''Return one page of download urls given the order id, cursor and page size
         '''
@@ -336,6 +372,7 @@ class dap:
                     fp.write(chunk)
             self.__print(f"Download successful! {path}")
             break
+
 
     def __download_from_urls(self, urls, path='/var/tmp/', replace=False):
         '''Given a list of urls, download them
@@ -475,6 +512,7 @@ class dap:
         urls = json.loads(req.text)['urls'].values()
         return urls
 
+
     def download_search(self, filter_arg, path='/var/tmp/', replace=False, prompt=True):
         '''Uses the /downloads api method to download straight from
         the search without placing orders and downloading from there
@@ -512,6 +550,7 @@ class dap:
             return
 
         return downloaded_files
+
 
     def download_with_order(self, query, path='/var/tmp', replace=False, prompt=True):
         ''' Place an order based on a query,
@@ -561,6 +600,7 @@ class dap:
             return
 
         return downloaded_files
+
 
     def __proceed_prompt(self, prompt):
         while True:
