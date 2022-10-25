@@ -2,6 +2,7 @@ import re
 import requests
 import json
 
+
 def get_api_url(host_URL):
     """
     Returns the data API url from a DAP host URL by scrapping DAP client responses
@@ -24,7 +25,7 @@ def get_api_url(host_URL):
     req = requests.get(main_js_url)
     main_js_contents = req.text
 
-    # extract prod URL 
+    # extract prod URL
     prod_json_str = "{"+ re.search(r'"prod":\s*{[^}]*}', main_js_contents).group() + "}"
     prod_json = json.loads(prod_json_str)
     return prod_json["prod"]["lambdaApi"]

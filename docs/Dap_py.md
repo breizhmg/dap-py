@@ -26,12 +26,12 @@ And that's it! Setup is complete. All future methods will revolve around this `a
 
 ## Authentication
 
-Authentication is simple. This module supports both __basic__ and __certificate__ authentication protocols. The basic method does not use a certificate, expires more quickly, and does not support two-factor authentication. The other methods in this module will not work without proper authentication. If a path to a certificate is not provided, the constructor will attempt to find a certificate named `.<host name>.cert` in the top-level dap-py directory.
+Authentication is simple. This module supports both __basic__ and __certificate__ authentication protocols. The basic method does not use a certificate, expires more quickly, and does not support two-factor authentication. The other methods in this module will not work without proper authentication. If a path to a certificate is not provided, the constructor will attempt to find a certificate named `.<host name>.cert` in the `certs` directory.
 
 Providing a path to an existing certificate to dap:
 
 ```python
-a2e = dap('a2e.energy.gov', '/path/to/a2e.energy.gov.cert')
+a2e = dap('a2e.energy.gov', '/path/to/.a2e.energy.gov.cert')
 ```
 
 If the certificate is valid, the module will renew it. Otherwise, the constructor will set up guest credentials. If you don't have a valid certificate, you will have to create one via one of the following authentication methods:

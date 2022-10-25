@@ -1,5 +1,4 @@
 import unittest
-import sys
 import os
 
 from dap_py import dap
@@ -18,6 +17,7 @@ class TestDap(unittest.TestCase):
 
     def test_create_a2e(self):
         a2e = dap('a2e.energy.gov')
+
 
     def test_search_inventory_lidar_z04_a0(self):
         a2e = dap('a2e.energy.gov')
@@ -39,6 +39,7 @@ class TestDap(unittest.TestCase):
 
         self.assertEquals(len(file_names), expected_len, f"Search did not return the expected number of files: {expected_len}")
         self.assertEquals(file_names, files_check, "Search returned unexpected files")
+
 
     def test_search_inventory_sodar_z15_00(self):
         a2e = dap('a2e.energy.gov')
@@ -83,6 +84,7 @@ class TestDap(unittest.TestCase):
         self.assertEquals(len(file_names), expected_len, f"Search did not return the expected number of files: {expected_len}")
         self.assertEquals(file_names, files_check, "Search returned unexpected files")
 
+
     def test_search_stats_awaken_aml_lidar_z02_00(self):
         a2e = dap('a2e.energy.gov')
 
@@ -100,6 +102,7 @@ class TestDap(unittest.TestCase):
         result = a2e.search(filter, table='stats')
 
         self.assertEquals(result, result_check, "Stats search returned an unexpected result")
+
 
     def test_download(self):
         a2e = dap('a2e.energy.gov')
