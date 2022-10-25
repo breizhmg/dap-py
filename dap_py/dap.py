@@ -389,10 +389,7 @@ class dap:
                 a = url.split('/')
                 filename = a[5].split('?')[0]
 
-                # piece the name of the dataset together from the url
-                dataset = a[4] + '.' + '.'.join(a[5].split('.')[:3])
-
-                download_dir = os.path.join(path, dataset)
+                download_dir = path
                 os.makedirs(download_dir, exist_ok=True)
                 # the final file path
                 filepath = os.path.join(download_dir, filename)
