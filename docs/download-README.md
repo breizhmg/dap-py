@@ -10,6 +10,19 @@ request-data facilitates search and download of data stored on A2e servers. Give
 ### File Attributes
 When a file is stored by the A2e system, a number of metadata attributes for that file are stored. request-data allows you to query on these attributes to retrieve specific data files. Along with values added by the system, the dot-delimited filename is parsed into attributes which can be used for data access. These attributes are named based on the configuration for the project. Arbitrary values that are not registered in the project config may also be stored in the file name. The first unregistered value will be stored as `ext1`, the second `ext2`, the third `ext3`, and so on.
 
+Example filter that finds csv files where the unregistered attribute `ext1` is either wind or conductivity:
+```json
+{
+	"Dataset": "buoy/buoy.z05.00",
+	"date_time": {
+		"between": ["20201008000000", "20201010000000"]
+	},
+	"file_type": "csv",
+	"ext1" : ["wind", "conductivity"]
+}
+```
+
+
 ### Output Format Parameters
 Format parameters act as modifiers for the output of request-data, but do not effect the data query results.<br>
 Valid format parameters are:
