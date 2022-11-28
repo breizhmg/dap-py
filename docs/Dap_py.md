@@ -1,25 +1,29 @@
 # Dap_py Package
 
-This package contains the dap_py module and wraps all other packages to make importing easy. Information on the plotting module is in plot/README.md. For more information on the dap_py module, keep reading.
+This package contains the DAP module and wraps all other modules to make importing easy. Information on the plotting module is in plot/README.md. For more information on the DAP module, keep reading.
 
-## Dap_py Module
+## DAP Module
 
-The dap_py module is a high-level interface that allows the programmer to use our API to authenticate, search, and download the data they want in very few lines of code.
+The DAP module is a high-level interface that allows the programmer to use our API to authenticate, search, and download the data they want in very few lines of code.
+
+## Installation
+
+The dap_py package can be installed via pip: `pip install dap-py`
 
 ## Setup
 
 The following examples demonstrate how to download data via A2e.
 
-First, import the module:
+First, import the main module:
 
 ```python
-from dap_py import dap
+from dap_py import DAP
 ```
 
-Then, create an instance of the `dap` class. The constructor takes one required argument: the hostname of the service from which you want to download data.
+Then, create an instance of the `DAP` class. The constructor takes one required argument: the hostname of the service from which you want to download data.
 
 ```python
-a2e = dap('a2e.energy.gov')
+a2e = DAP('a2e.energy.gov')
 ```
 
 And that's it! Setup is complete. All future methods will revolve around this `a2e` object. Alternatively, the constructor accepts two optional arguments: `cert` and `quiet`. The cert argument takes the path to a certificate. The quiet argument disables output when set to `True`, which is useful for scripting.
@@ -28,10 +32,10 @@ And that's it! Setup is complete. All future methods will revolve around this `a
 
 Authentication is simple. This module supports both __basic__ and __certificate__ authentication protocols. The basic method does not use a certificate, expires more quickly, and does not support two-factor authentication. The other methods in this module will not work without proper authentication. If a path to a certificate is not provided, the constructor will attempt to find a certificate named `.<host name>.cert` in the `certs` directory.
 
-Providing a path to an existing certificate to dap:
+Providing a path to an existing certificate to DAP:
 
 ```python
-a2e = dap('a2e.energy.gov', '/path/to/.a2e.energy.gov.cert')
+a2e = DAP('a2e.energy.gov', '/path/to/.a2e.energy.gov.cert')
 ```
 
 If the certificate is valid, the module will renew it. Otherwise, the constructor will set up guest credentials. If you don't have a valid certificate, you will have to create one via one of the following authentication methods:
@@ -105,7 +109,7 @@ All the download functions return a list of paths to the downloaded files.
 
 Inventory searches fail with large numbers of files. This method will avoid creating a list of files and instead download using a search query. The module will prompt you to confirm that you want to download the files, although it won't say how much space the files will take up, so caution is recommended.
 
-The dap function is:
+The DAP function is:
 #### `a2e.download_search(filter_arg, path='/var/tmp/', force=False)`
 
 ##### Example

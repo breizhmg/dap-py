@@ -11,8 +11,8 @@ def get_api_url(host_URL):
         host_URL (str): the url of the host, e.g. "livewire.energy.gov"
     """
     # get data page html contents
-    if not host_URL.startswith('http'):
-        host_URL=f'http://{host_URL}'
+    if not host_URL.startswith("http"):
+        host_URL = f"http://{host_URL}"
     req = requests.get(f"{host_URL}/data")
 
     data_html = req.text
@@ -26,6 +26,8 @@ def get_api_url(host_URL):
     main_js_contents = req.text
 
     # extract prod URL
-    prod_json_str = "{"+ re.search(r'"prod":\s*{[^}]*}', main_js_contents).group() + "}"
+    prod_json_str = (
+        "{" + re.search(r'"prod":\s*{[^}]*}', main_js_contents).group() + "}"
+    )
     prod_json = json.loads(prod_json_str)
     return prod_json["prod"]["lambdaApi"]
