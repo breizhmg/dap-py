@@ -4,6 +4,8 @@ import base64
 from pathlib import Path
 import requests
 from getpass import getpass
+import traceback
+
 from .utils.scraper import get_api_url
 
 
@@ -30,6 +32,7 @@ class DAP:
         cert_path=None,
         save_cert_dir=str(Path.home() / "dap/certs/"),
         download_dir=str(Path.home() / "dap/downloads"),
+        setup_guest_auth=True,
         quiet=False,
         spp=False,
         confirm_downloads=True,
@@ -41,6 +44,7 @@ class DAP:
             cert_path (str, optional): path to authentication certificate file. Defaults to None.
             save_cert_dir (str, optional): Path to directory where certificates are stored. Defaults to ~/dap/certs/
             download_dir (str, optional): Path to directory where files will be downloaded. Defaults to ~/dap/downloads/
+            setup_guest_auth (bool, optional): Whether to set up guest auth if the certificate is invalid or not provided. Defaults to True
             quiet (bool, optional): suppresses output print statemens. Useful for scripting Defaults to False.
             spp (bool, optional): If this is a dap for the Solid Phase Processing data. Defaults to False.
             confirm_downloads (bool, optional): Whether or not to confirm before downloading. Defaults to True.
@@ -59,29 +63,54 @@ class DAP:
         self._cert = None
         self._auth = None
 
-        # set the certificate and download paths.
-        if "DAP_CERT_DIR" in os.environ:
-            self.save_cert_dir = os.environ["DAP_CERT_DIR"]
+        # set the certificate save and download paths.
+        if save_cert_dir is None:
+            self.save_cert_dir = os.getenv("DAP_CERT_DIR") or Path.home() / "dap/certs"
         else:
             self.save_cert_dir = save_cert_dir
 
-        if "DAP_DOWNLOAD_DIR" in os.environ:
-            self.download_dir = os.environ["DAP_DOWNLOAD_DIR"]
+        if download_dir is None:
+            self.download_dir = (
+                os.getenv("DAP_DOWNLOAD_DIR") or Path.home() / "dap/downloads"
+            )
         else:
             self.download_dir = download_dir
 
         self.__create_dirs()
 
-        self.__read_cert()
-
-        if self.__cert_is_valid():
-            self.__create_cert_auth()
-            self.__print("Certificate is setup")
+        if cert_path is None:
+            self._cert_path = Path(self.save_cert_dir) / f".{self.host_URL}.cert"
         else:
-            self.setup_guest_auth()
-            self.__print(
-                "Certificate not found or was invalid. Using guest credentials..."
-            )
+            self._cert_path = cert_path
+
+        self.__print(f"Looking for a certificate: {self._cert_path}...")
+        found_cert = False
+        if os.path.isfile(self._cert_path):
+            self.__print("Found it!")
+            found_cert = True
+        else:
+            self.__print("Certificate not found.")
+            if setup_guest_auth:
+                self.__print(
+                    "Setting up guest authentication since no certificate was found..."
+                )
+                self.setup_guest_auth()
+
+        if found_cert:
+            self.__read_cert()
+
+            if self.__cert_is_valid():
+                self.__create_cert_auth()
+                self.__print(
+                    "Authenticaion successfully created using valid certificate."
+                )
+            else:
+                self.__print("Certificate was invalid.")
+                if setup_guest_auth:
+                    self.__print(
+                        "Setting up guest authentication since the certificate was invalid..."
+                    )
+                    self.setup_guest_auth()
 
     def __print(self, *args, sep="", end="\n", file=None):
         if not self._quiet:
@@ -121,11 +150,10 @@ class DAP:
             self.__create_cert_auth()
         except BadStatusCodeError:
             self.__print("Incorrect credentials")
-            return
+            return False
         except Exception as e:
             self.__print(e)
-            return
-        self.__print("Success!")
+            return False
         return True
 
     def setup_basic_auth(self, username=None, password=None):
@@ -139,11 +167,14 @@ class DAP:
         username = username or input("username: ")
         password = password or getpass("password: ")
 
+        self.__print(f"Setting up authentication for user {username}...")
+
         user_pass_encoded = base64.b64encode(
             (f"{username}:{password}").encode("utf-8")
         ).decode("ascii")
 
         self._auth = {"Authorization": f"Basic {user_pass_encoded}"}
+        self.__print(f"Authentication created for {username}.")
         # TODO: check if the creds are valid
         # without a certificate
         # should we try a query? low priority
@@ -163,6 +194,7 @@ class DAP:
         Returns:
             bool: Whether the requested certificate was valid.
         """
+
         if self.__cert_is_valid():
             self.__print("Valid certificate already created")
             return True
@@ -171,12 +203,25 @@ class DAP:
             "username": username or input("username: "),
             "password": password or getpass("password: "),
         }
-        try:
-            self.__request_cert_auth(params)
-        except BadStatusCodeError:
-            self.__print("")
+
+        self.__print(
+            f"Setting up certificate authentication for user {params['username']}..."
+        )
+
+        if not self.__request_cert_auth(params):
+            self.__print("Requesting a certificate failed.")
             return False
-        return self.__cert_is_valid()
+
+        valid = self.__cert_is_valid()
+        if valid:
+            self.__print(
+                f"Successfully set up certificate authentication for user {params['username']}."
+            )
+        else:
+            self.__print(
+                "Setting up certificate authentication failed: certificate was invalid."
+            )
+        return valid
 
     def setup_two_factor_auth(self, username=None, password=None, authcode=None):
         """Given a username, password, and 2 factor authentication code,
@@ -200,8 +245,22 @@ class DAP:
             "authcode": authcode or getpass("authcode: "),
         }
 
+        self.__print(
+            f"Setting up two-factor authentication for user {params['username']}..."
+        )
+
         self.__request_cert_auth(params)
-        return self.__cert_is_valid()
+
+        valid = self.__cert_is_valid()
+        if valid:
+            self.__print(
+                f"Successfully set up two-factor authentication for user {params['username']}."
+            )
+        else:
+            self.__print(
+                "Setting up two-factor authentication failed: created certificate was invalid."
+            )
+        return valid
 
     def __renew_cert(self):
         """Renews the certificate"""
@@ -223,28 +282,25 @@ class DAP:
     def __cert_is_valid(self):
         try:
             return self.__renew_cert()
-        except (ValueError, BadStatusCodeError) as e:  # noqa: E722
+        except (ValueError, BadStatusCodeError) as e:
             return False
 
     def __save_cert(self):
         """Save the cert to path"""
-        if self._cert_path is not None:
-            with open(self._cert_path, "w") as cf:
-                cf.write(self._cert)
-                self.__print(f"Saved certificate as {self._cert_path}")
+        path = Path(self.save_cert_dir) / f".{self.host_URL}.cert"
+        with open(path, "w") as cf:
+            cf.write(self._cert)
+            self.__print(f"Saved certificate as {self._cert_path}")
 
     def __read_cert(self):
         """Read from the path"""
-        if self._cert_path is None:
-            # check for a cert in the save directory
-            self._cert_path = Path(self.save_cert_dir) / f".{self.host_URL}.cert"
-            self.__print(f"Looking for a certificate: {self._cert_path}...")
         try:
             with open(self._cert_path) as cf:
-                self.__print(f"Found certificate: {self._cert_path}")
+                self.__print(f"Reading certificate: {self._cert_path}...")
                 self._cert = cf.read()
-        except FileNotFoundError:
-            self.__print(f"File not found {self._cert_path}")
+        except (OSError, IOError) as e:
+            self.__print(f"There was a problem reading the certificate!")
+            self.__print(traceback.format_exc())
             return False
         return True
 
@@ -264,8 +320,7 @@ class DAP:
             list: The list of file information returned by the filter.
         """
 
-        if not self._auth:
-            raise Exception("Auth token cannot be None")
+        self.__check_for_auth()
 
         if "livewire" not in self.host_URL:
             filter_arg["latest"] = latest
@@ -309,8 +364,7 @@ class DAP:
 
     def __place_order(self, dataset, filter_arg):
         """Place an order and return the order ID"""
-        if not self._auth:
-            raise Exception("Auth token cannot be None")
+        self.__check_for_auth()
 
         params = {"datasets": {f"{dataset}": {"query": filter_arg}}}
 
@@ -330,8 +384,7 @@ class DAP:
 
     def __get_download_urls(self, ID, page_size=500):
         """Given order ID, return the download urls"""
-        if not self._auth:
-            raise Exception("Auth token cannot be None")
+        self.__check_for_auth()
 
         urls = []
         cursor = None
@@ -446,13 +499,10 @@ class DAP:
         Returns:
             list: The list of paths to the downloaded files.
         """
+        self.__check_for_auth()
+
         if not files:
             self.__print("No files provided.")
-
-        if not self._auth:
-            raise Exception(
-                "Auth token cannot be None. It can be updated with setup_cert_auth()"
-            )
 
         filter = {
             "output": "json",
@@ -516,8 +566,7 @@ class DAP:
         to search the inventory table and return
         the download urls to files in s3
         """
-        if not self._auth:
-            raise Exception("Auth token cannot be None")
+        self.__check_for_auth()
 
         req = requests.post(
             f"{self._api_url}/downloads",
@@ -625,7 +674,7 @@ class DAP:
                     urls, path=path, replace=replace
                 )
             except Exception as e:
-                self._print(e)
+                self.__print(e)
                 return
         else:
             return
@@ -641,3 +690,9 @@ class DAP:
                 break
 
         return proceed == "y"
+
+    def __check_for_auth(self):
+        if not self._auth:
+            raise Exception(
+                "No authentication has been set up. To create authentication use either setup_guest_auth(), setup_basic_auth(), setup_cert_auth(), or setup_two_factor_auth()"
+            )

@@ -46,11 +46,11 @@ Sets up basic authentication with a username and password. The arguments are opt
 
 #### `a2e.setup_cert_auth(username=None, password=None)`
 
-Similar to the method above, but will request a certificate instead of basic authentication. The certificate is stored in a file named `.<host name>.cert`, for example `.a2e.energy.gov.cert`.
+Similar to the method above, but will request a certificate instead of basic authentication. The certificate is stored in a file named `.<host name>.cert`, for example `.a2e.energy.gov.cert`. Returns whether or not a valid certificate was created.
 
 #### `a2e.setup_two_factor_auth(username=None, password=None, authcode=None)`
 
-Similar to the method above, but uses two-factor authentication. The authcode is the 6-digit password code from Google Authenticator. This is the highest authentication level available. The again stores the certificate in a `.<host name>.cert` file.
+Similar to the method above, but uses two-factor authentication. The authcode is the 6-digit password code from Google Authenticator. This is the highest authentication level available. The again stores the certificate in a `.<host name>.cert` file. Returns whether or not a valid certificate was created.
 
 ### Searching for Files
 
