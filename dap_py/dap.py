@@ -45,7 +45,7 @@ class DAP:
             save_cert_dir (str, optional): Path to directory where certificates are stored. Defaults to None
             download_dir (str, optional): Path to directory where files will be downloaded. Defaults to None
             setup_guest_auth (bool, optional): Whether to set up guest auth if the certificate is invalid or not provided. Defaults to True
-            quiet (bool, optional): suppresses output print statemens. Useful for scripting Defaults to False.
+            quiet (bool, optional): suppresses output print statemens. Useful for scripting. Defaults to False.
             spp (bool, optional): If this is a dap for the Solid Phase Processing data. Defaults to False.
             confirm_downloads (bool, optional): Whether or not to confirm before downloading. Defaults to True.
         """

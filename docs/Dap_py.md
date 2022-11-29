@@ -26,7 +26,14 @@ Then, create an instance of the `DAP` class. The constructor takes one required 
 a2e = DAP('a2e.energy.gov')
 ```
 
-And that's it! Setup is complete. All future methods will revolve around this `a2e` object. Alternatively, the constructor accepts two optional arguments: `cert` and `quiet`. The cert argument takes the path to a certificate. The quiet argument disables output when set to `True`, which is useful for scripting.
+And that's it! Setup is complete. All future methods will revolve around this `a2e` object. The constructor also accepts a few optional arguments:
+- `cert_path` (str): path to authentication certificate file. Defaults to None.
+- `save_cert_dir` (str): Path to directory where certificates are stored. Defaults to None
+- `download_dir` (str): Path to directory where files will be downloaded. Defaults to None
+- `setup_guest_auth` (bool): Whether to set up guest auth if the certificate is invalid or not provided. Defaults to True
+- `quiet` (bool): suppresses output print statemens. Useful for scripting. Defaults to False.
+- `spp` (bool): If this is a dap for the Solid Phase Processing data. Defaults to False.
+- `confirm_downloads` (bool): Whether or not to confirm before downloading. Defaults to True.
 
 ## Authentication
 
@@ -35,7 +42,7 @@ Authentication is simple. This module supports both __basic__ and __certificate_
 Providing a path to an existing certificate to DAP:
 
 ```python
-a2e = DAP('a2e.energy.gov', '/path/to/.a2e.energy.gov.cert')
+a2e = DAP('a2e.energy.gov', cert_path='/path/to/.a2e.energy.gov.cert')
 ```
 
 If the certificate is valid, the module will renew it. Otherwise, the constructor will set up guest credentials. If you don't have a valid certificate, you will have to create one via one of the following authentication methods:
@@ -65,7 +72,7 @@ filter = {
     'file_type': 'nc'
 }
 ```
-The documentation for constructing the filter argument can be found [here](https://github.com/a2edap/dap-py/blob/master/a2e/download-README.md).
+The documentation for constructing the filter argument can be found in `docs/download-README.md`
 
 Now simply call this function:
 
