@@ -30,8 +30,8 @@ class DAP:
         self,
         host_URL,
         cert_path=None,
-        save_cert_dir=str(Path.home() / "dap/certs/"),
-        download_dir=str(Path.home() / "dap/downloads"),
+        save_cert_dir=None,
+        download_dir=None,
         setup_guest_auth=True,
         quiet=False,
         spp=False,
@@ -42,8 +42,8 @@ class DAP:
         Args:
             host_URL (str): The url of the host, e.g. "livewire.energy.gov"
             cert_path (str, optional): path to authentication certificate file. Defaults to None.
-            save_cert_dir (str, optional): Path to directory where certificates are stored. Defaults to ~/dap/certs/
-            download_dir (str, optional): Path to directory where files will be downloaded. Defaults to ~/dap/downloads/
+            save_cert_dir (str, optional): Path to directory where certificates are stored. Defaults to None
+            download_dir (str, optional): Path to directory where files will be downloaded. Defaults to None
             setup_guest_auth (bool, optional): Whether to set up guest auth if the certificate is invalid or not provided. Defaults to True
             quiet (bool, optional): suppresses output print statemens. Useful for scripting Defaults to False.
             spp (bool, optional): If this is a dap for the Solid Phase Processing data. Defaults to False.
@@ -65,16 +65,14 @@ class DAP:
 
         # set the certificate save and download paths.
         if save_cert_dir is None:
-            self.save_cert_dir = os.getenv("DAP_CERT_DIR") or Path.home() / "dap/certs"
-        else:
-            self.save_cert_dir = save_cert_dir
+            save_cert_dir = os.getenv("DAP_CERT_DIR") or Path.home() / "dap/certs"
+        self.save_cert_dir = save_cert_dir
 
         if download_dir is None:
-            self.download_dir = (
+            download_dir = (
                 os.getenv("DAP_DOWNLOAD_DIR") or Path.home() / "dap/downloads"
             )
-        else:
-            self.download_dir = download_dir
+        self.download_dir = download_dir
 
         self.__create_dirs()
 
