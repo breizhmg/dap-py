@@ -864,13 +864,11 @@ class TestDap(unittest.TestCase):
 
         result = a2e.search(filter, table="stats")
 
-        self.assertEqual(
-            result, result_check, "Stats search returned an unexpected result"
-        )
+        self.assertEqual(result, result_check, "Stats search returned an unexpected result")
         print("Test search stats tap arm.lidar.nsa.c1.c1 passed.")
 
     def test_download(self):
-        a2e = DAP("a2e.energy.gov", cert_path)
+        a2e = DAP("a2e.energy.gov", cert_path, confirm_downloads=False)
         filter = {
             "Dataset": "wfip2/lidar.z04.a0",
             "date_time": {"between": ["20151014000000", "20151014010000"]},
@@ -880,7 +878,7 @@ class TestDap(unittest.TestCase):
         # download via a list of files
         file_names = a2e.search(filter, table="inventory")
 
-        files = a2e.download_files(file_names, replace=True, confirm=False)
+        files = a2e.download_files(file_names, replace=True)
 
         self.assertEqual(
             4,
@@ -893,7 +891,7 @@ class TestDap(unittest.TestCase):
                 raise AssertionError(f"Supposedly downloaded file does not exist: {f}")
 
         # download via a search
-        files = a2e.download_search(filter, replace=True, confirm=False)
+        files = a2e.download_search(filter, replace=True)
 
         self.assertEqual(
             4,
@@ -906,7 +904,7 @@ class TestDap(unittest.TestCase):
                 raise AssertionError(f"Supposedly downloaded file does not exist: {f}")
 
         # download by placing an order
-        files = a2e.download_with_order(filter, replace=True, confirm=False)
+        files = a2e.download_with_order(filter, replace=True)
 
         self.assertEqual(
             4,
