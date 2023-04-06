@@ -2,7 +2,7 @@ import unittest
 import os
 from pathlib import Path
 
-from dap_py import DAP
+from doe_dap_dl import DAP
 
 cert_path = ""
 

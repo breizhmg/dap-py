@@ -1,4 +1,4 @@
-# Dap_py Package
+# doe_dap_dl Package
 
 This package contains the DAP module and wraps all other modules to make importing easy. Information on the plotting module is in plot/README.md. For more information on the DAP module, keep reading.
 
@@ -8,7 +8,7 @@ The DAP module is a high-level interface that allows the programmer to use our A
 
 ## Installation
 
-The dap_py package can be installed via pip: `pip install dap-py`
+The doe_dap_dl package can be installed via pip: `pip install doe-dap-dl`
 
 ## Setup
 
@@ -17,7 +17,7 @@ The following examples demonstrate how to download data via A2e.
 First, import the main module:
 
 ```python
-from dap_py import DAP
+from doe_dap_dl import DAP
 ```
 
 Then, create an instance of the `DAP` class. The constructor takes one required argument: the hostname of the service from which you want to download data.
@@ -101,12 +101,12 @@ The path specifies where the module will download files. The replace flag determ
 filter = {
     'Dataset': 'wfip2/lidar.z04.a0',
     'date_time': {
-        'between': ['20151001000000', '20151004000000']
+        'between': ['20151004000000', '20151004020000']
     },
     'file_type': 'nc'
 }
 
-file_names = a2e.search(filter, table='Inventory')
+file_names = a2e.search(filter)
 files = a2e.download_files(file_names)
 ```
 

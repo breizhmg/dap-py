@@ -12,16 +12,14 @@ README = (CWD / "README.md").read_text()
 with open(os.path.join(CWD, "requirements.txt")) as requirements_file:
     # Parse requirements.txt, ignoring any commented-out lines.
     REQUIREMENTS = [
-        line
-        for line in requirements_file.read().splitlines()
-        if not line.startswith("#")
+        line for line in requirements_file.read().splitlines() if not line.startswith("#")
     ]
 
 version = "0.1.0"
 assert "." in version
 
 setuptools.setup(
-    name="dap-py",
+    name="doe-dap-dl",
     version=version,
     description="Packages for Jupyter Notebook users to interact with data from A2e, Livewire, and the SPP data platform.",
     long_description=README,

@@ -65,12 +65,12 @@ class DAP:
 
         # set the certificate save and download paths.
         if save_cert_dir is None:
-            save_cert_dir = os.getenv("DAP_CERT_DIR") or Path.home() / "dap/certs"
+            save_cert_dir = os.getenv("DAP_CERT_DIR") or Path.home() / "doe_dap_dl/certs"
         self.save_cert_dir = save_cert_dir
 
         if download_dir is None:
             download_dir = (
-                os.getenv("DAP_DOWNLOAD_DIR") or Path.home() / "dap/downloads"
+                os.getenv("DAP_DOWNLOAD_DIR") or Path.home() / "doe_dap_dl/downloads"
             )
         self.download_dir = download_dir
 
