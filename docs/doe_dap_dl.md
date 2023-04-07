@@ -26,7 +26,7 @@ Then, create an instance of the `DAP` class. The constructor takes one required 
 a2e = DAP('a2e.energy.gov')
 ```
 
-And that's it! Setup is complete. All future methods will revolve around this `a2e` object. The constructor also accepts a few optional arguments:
+And that's it! Setup is complete. All future methods will revolve around this `a2e` object. The constructor also accepts the following optional arguments
 
 - `cert_path` (str): path to authentication certificate file.
 - `save_cert_dir` (str): Path to directory where certificates are stored.
@@ -53,11 +53,11 @@ If the certificate is valid, the module will renew it. Otherwise, the constructo
 
 #### `a2e.setup_cert_auth(username=None, password=None)`
 
-Similar to the method above, but will request a certificate instead of basic authentication. The certificate is stored in a file named `.<host name>.cert`, for example `.a2e.energy.gov.cert`. Returns whether or not a valid certificate was created.
+Sets up authentication with a certificate that can be used for subsequent authentication. The certificate is stored in a file named `.<host name>.cert`, for example `.a2e.energy.gov.cert`. Returns whether or not a valid certificate was created.
 
 #### `a2e.setup_two_factor_auth(username=None, password=None, authcode=None)`
 
-Similar to the method above, but uses two-factor authentication. The authcode is the 6-digit password code from Google Authenticator. This is the highest authentication level available. The again stores the certificate in a `.<host name>.cert` file. Returns whether or not a valid certificate was created.
+Creates a certificate similar to the method above, but uses two-factor authentication. The authcode is the 6-digit password code from Google Authenticator. This is the highest authentication level available. The certificate is stored in a file named `.<host name>.cert`. Returns whether or not a valid certificate was created.
 
 Alternatively, you can choose to set up basic authentication. This method does not create a certificate.
 
