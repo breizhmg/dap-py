@@ -2,14 +2,13 @@
 
 This repository contains useful packages for Jupyter Notebook users to interact with data from A2e, Livewire, and the SPP data platform. Users will be able to import these packages and call high-level functions that handle all of the api calls, graphing, and interpolations to stream-line the end user's ability to analyze data.
 
-### Example:
+## Example
 
 ```python
 from doe_dap_dl import DAP
 a2e = DAP('a2e.energy.gov')
 
-# authentication
-a2e.setup_basic_auth(username='username', password='password')
+va2e.setup_basic_auth(username='username', password='password')
 
 # Search for files
 filter = {
