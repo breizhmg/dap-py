@@ -1,4 +1,4 @@
-# Dap_py Package
+# doe_dap_dl Package
 
 This package contains the DAP module and wraps all other modules to make importing easy. Information on the plotting module is in plot/README.md. For more information on the DAP module, keep reading.
 
@@ -8,7 +8,7 @@ The DAP module is a high-level interface that allows the programmer to use our A
 
 ## Installation
 
-The dap_py package can be installed via pip: `pip install dap-py`
+The doe_dap_dl package can be installed via pip: `pip install doe-dap-dl`
 
 ## Setup
 
@@ -17,7 +17,7 @@ The following examples demonstrate how to download data via A2e.
 First, import the main module:
 
 ```python
-from dap_py import DAP
+from doe_dap_dl import DAP
 ```
 
 Then, create an instance of the `DAP` class. The constructor takes one required argument: the hostname of the service from which you want to download data.
@@ -26,10 +26,11 @@ Then, create an instance of the `DAP` class. The constructor takes one required 
 a2e = DAP('a2e.energy.gov')
 ```
 
-And that's it! Setup is complete. All future methods will revolve around this `a2e` object. The constructor also accepts a few optional arguments:
-- `cert_path` (str): path to authentication certificate file. Defaults to None.
-- `save_cert_dir` (str): Path to directory where certificates are stored. Defaults to None
-- `download_dir` (str): Path to directory where files will be downloaded. Defaults to None
+And that's it! Setup is complete. All future methods will revolve around this `a2e` object. The constructor also accepts the following optional arguments
+
+- `cert_path` (str): path to authentication certificate file.
+- `save_cert_dir` (str): Path to directory where certificates are stored.
+- `download_dir` (str): Path to directory where files will be downloaded.
 - `setup_guest_auth` (bool): Whether to set up guest auth if the certificate is invalid or not provided. Defaults to True
 - `quiet` (bool): suppresses output print statemens. Useful for scripting. Defaults to False.
 - `spp` (bool): If this is a dap for the Solid Phase Processing data. Defaults to False.
@@ -37,27 +38,32 @@ And that's it! Setup is complete. All future methods will revolve around this `a
 
 ## Authentication
 
-Authentication is simple. This module supports both __basic__ and __certificate__ authentication protocols. The basic method does not use a certificate, expires more quickly, and does not support two-factor authentication. The other methods in this module will not work without proper authentication. If a path to a certificate is not provided, the constructor will attempt to find a certificate named `.<host name>.cert` in the `certs` directory.
+Authentication is simple. This module supports both __basic__ and __certificate__ authentication protocols. The basic method does not use a certificate, expires more quickly, and does not support two-factor authentication. The other methods in this module will not work without proper authentication.
 
-Providing a path to an existing certificate to DAP:
+### Certificates
 
-```python
-a2e = DAP('a2e.energy.gov', cert_path='/path/to/.a2e.energy.gov.cert')
-```
+The default name for an authetication certificate is `.<host name>.cert`, for example `.a2e.energy.gov.cert`. The following is the precedence of the different ways to provide a certificate's location.
+
+1. `cert_path`
+2. If `save_cert_dir` was provided, `DAP` will look for a certificate at `<save_cert_dir>/.<host name>.cert`
+3. If the environment variable `DAP_CERT_DIR` exists, `DAP` will look for a certificate at `$DAP_CERT_DIR/.<host name>.cert`
+4. Otherwise, `DAP` will look for a certificate at `~/doe_dap_dl/certs/.<host name>.cert`
 
 If the certificate is valid, the module will renew it. Otherwise, the constructor will set up guest credentials. If you don't have a valid certificate, you will have to create one via one of the following authentication methods:
+
+#### `a2e.setup_cert_auth(username=None, password=None)`
+
+Sets up authentication with a certificate that can be used for subsequent authentication. The certificate is stored in a file named `.<host name>.cert`, for example `.a2e.energy.gov.cert`. Returns whether or not a valid certificate was created.
+
+#### `a2e.setup_two_factor_auth(username=None, password=None, authcode=None)`
+
+Creates a certificate similar to the method above, but uses two-factor authentication. The authcode is the 6-digit password code from Google Authenticator. This is the highest authentication level available. The certificate is stored in a file named `.<host name>.cert`. Returns whether or not a valid certificate was created.
+
+Alternatively, you can choose to set up basic authentication. This method does not create a certificate.
 
 #### `a2e.setup_basic_auth(username=None, password=None)`
 
 Sets up basic authentication with a username and password. The arguments are optional, but the module will prompt for them if omitted.
-
-#### `a2e.setup_cert_auth(username=None, password=None)`
-
-Similar to the method above, but will request a certificate instead of basic authentication. The certificate is stored in a file named `.<host name>.cert`, for example `.a2e.energy.gov.cert`. Returns whether or not a valid certificate was created.
-
-#### `a2e.setup_two_factor_auth(username=None, password=None, authcode=None)`
-
-Similar to the method above, but uses two-factor authentication. The authcode is the 6-digit password code from Google Authenticator. This is the highest authentication level available. The again stores the certificate in a `.<host name>.cert` file. Returns whether or not a valid certificate was created.
 
 ### Searching for Files
 
@@ -72,6 +78,7 @@ filter = {
     'file_type': 'nc'
 }
 ```
+
 The documentation for constructing the filter argument can be found in `docs/download-README.md`
 
 Now simply call this function:
@@ -81,7 +88,6 @@ Now simply call this function:
 The `'inventory'` option returns a list of files that match the filter. Filters that return large lists of files may time out, or return an empty list (despite the query matching many files). To avoid this, you can request an accounting of files by calling the function with `table='stats'`.
 
 By default, only the latest files are considered for the search. If you'd like to include older files, you can use `latest=False`. Old files may not be downloadable.
-
 
 ### Downloading Files
 
@@ -117,6 +123,7 @@ All the download functions return a list of paths to the downloaded files.
 Inventory searches fail with large numbers of files. This method will avoid creating a list of files and instead download using a search query. The module will prompt you to confirm that you want to download the files, although it won't say how much space the files will take up, so caution is recommended.
 
 The DAP function is:
+
 #### `a2e.download_search(filter_arg, path='/var/tmp/', force=False)`
 
 ##### Example

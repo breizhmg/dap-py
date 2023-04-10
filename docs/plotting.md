@@ -1,4 +1,4 @@
-# dap_py.plot Package
+# doe_dap_dl.plot Package
 
 This package contains the plot module. The package requires both matplotlib and numpy as dependencies apart from the standard python core library.
 
@@ -12,7 +12,7 @@ First, import the module. If using Jupyter Notebook, be sure to use the iPython 
 
 ```python
 %matplotlib inline
-from dap_py.plot import plot
+from doe_dap_dl.plot import plot
 ```
 
 Next, create a Plotter object:
@@ -55,7 +55,7 @@ Height of each plot in inches.
 
 ```python
 %matplotlib inline
-from dap_py.plot import plot
+from doe_dap_dl.plot import plot
 
 plotter = plot.Plotter('/var/tmp/wfip2.lidar.z01.b0/')
 
