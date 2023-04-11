@@ -8,7 +8,7 @@ This repository contains useful packages for Jupyter Notebook users to interact 
 from doe_dap_dl import DAP
 a2e = DAP('a2e.energy.gov')
 
-va2e.setup_basic_auth(username='username', password='password')
+a2e.setup_basic_auth(username='username', password='password')
 
 # Search for files
 filter = {
