@@ -62,6 +62,7 @@ class DAP:
         self._cert_path = cert_path
         self._cert = None
         self._auth = None
+        self._using_guest_auth = False
 
         # set the certificate save and download paths.
         if save_cert_dir is None:
@@ -171,6 +172,8 @@ class DAP:
             (f"{username}:{password}").encode("utf-8")
         ).decode("ascii")
 
+        self._using_guest_auth = username == 'guest'
+
         self._auth = {"Authorization": f"Basic {user_pass_encoded}"}
         self.__print(f"Authentication created for {username}.")
         # TODO: check if the creds are valid
@@ -215,6 +218,7 @@ class DAP:
             self.__print(
                 f"Successfully set up certificate authentication for user {params['username']}."
             )
+            self._using_guest_auth = False
         else:
             self.__print(
                 "Setting up certificate authentication failed: certificate was invalid."
@@ -254,6 +258,7 @@ class DAP:
             self.__print(
                 f"Successfully set up two-factor authentication for user {params['username']}."
             )
+            self._using_guest_auth = False
         else:
             self.__print(
                 "Setting up two-factor authentication failed: created certificate was invalid."
@@ -498,6 +503,7 @@ class DAP:
             list: The list of paths to the downloaded files.
         """
         self.__check_for_auth()
+        self.__check_for_guest_auth()
 
         if not files:
             self.__print("No files provided.")
@@ -589,7 +595,7 @@ class DAP:
         Returns:
             list: The list of paths to the downloaded files.
         """
-
+        self.__check_for_guest_auth()
         try:
             urls = self.__search_for_urls(
                 {
@@ -636,6 +642,7 @@ class DAP:
         Returns:
             list: The list of paths to the downloaded files.
         """
+        self.__check_for_guest_auth()
         dataset = filter_arg["Dataset"]
 
         if not dataset:
@@ -693,4 +700,10 @@ class DAP:
         if not self._auth:
             raise Exception(
                 "No authentication has been set up. To create authentication use either setup_guest_auth(), setup_basic_auth(), setup_cert_auth(), or setup_two_factor_auth()"
+            )
+
+    def __check_for_guest_auth(self):
+        if self._using_guest_auth:
+            raise Exception(
+                "Guests are not allowed to download files! To download files set up authentication via setup_basic_auth(), setup_cert_auth(), or setup_two_factor_auth()"
             )
