@@ -8,7 +8,7 @@ This repository contains useful packages for Jupyter Notebook users to interact 
 from doe_dap_dl import DAP
 a2e = DAP('a2e.energy.gov')
 
-va2e.setup_basic_auth(username='username', password='password')
+a2e.setup_basic_auth(username='username', password='password')
 
 # Search for files
 filter = {
@@ -24,3 +24,7 @@ file_names = a2e.search(filter)
 # download files
 files = a2e.download_files(file_names)
 ```
+
+[Main docs](https://github.com/DAP-platform/dap-py/blob/master/docs/doe_dap_dl.md)
+[Search query docs](https://github.com/DAP-platform/dap-py/blob/master/docs/download-README.md)
+[Plotting docs](https://github.com/DAP-platform/dap-py/blob/master/docs/plotting.md)
