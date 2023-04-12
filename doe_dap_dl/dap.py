@@ -518,8 +518,14 @@ class DAP:
         not_found = 0
         for f in files:
             filename = f["Filename"]
+            dataset = f["Dataset"]
+            date_time = f["date_time"]
 
-            filter["filter"] = f
+            filter["filter"] = {
+                "Filename" : filename,
+                "Dataset" : dataset,
+                "date_time" : date_time
+            }
 
             req = requests.post(
                 f"{self._api_url}/downloads",
