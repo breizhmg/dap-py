@@ -519,13 +519,13 @@ class DAP:
         for f in files:
             filename = f["Filename"]
             dataset = f["Dataset"]
-            date_time = f["date_time"]
 
             filter["filter"] = {
                 "Filename" : filename,
                 "Dataset" : dataset,
-                "date_time" : date_time
             }
+            if "date_time" in f:
+                filter["filter"]["date_time"] = f["date_time"]
 
             req = requests.post(
                 f"{self._api_url}/downloads",
