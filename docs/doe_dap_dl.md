@@ -31,14 +31,13 @@ And that's it! Setup is complete. All future methods will revolve around this `a
 - `cert_path` (str): path to authentication certificate file.
 - `save_cert_dir` (str): Path to directory where certificates are stored.
 - `download_dir` (str): Path to directory where files will be downloaded.
-- `setup_guest_auth` (bool): Whether to set up guest auth if the certificate is invalid or not provided. Defaults to True
 - `quiet` (bool): suppresses output print statemens. Useful for scripting. Defaults to False.
 - `spp` (bool): If this is a dap for the Solid Phase Processing data. Defaults to False.
 - `confirm_downloads` (bool): Whether or not to confirm before downloading. Defaults to True.
 
 ## Authentication
 
-Authentication is simple. This module supports both __basic__ and __certificate__ authentication protocols. The basic method does not use a certificate, expires more quickly, and does not support two-factor authentication. The other methods in this module will not work without proper authentication.
+Authentication is simple. This module supports both __basic__ and __certificate__ authentication protocols. The basic method does not use a certificate, expires more quickly, and does not support two-factor authentication. __Proper authentication is required to use this module.__
 
 ### Certificates
 
@@ -49,21 +48,19 @@ The default name for an authetication certificate is `.<host name>.cert`, for ex
 3. If the environment variable `DAP_CERT_DIR` exists, `DAP` will look for a certificate at `$DAP_CERT_DIR/.<host name>.cert`
 4. Otherwise, `DAP` will look for a certificate at `~/doe_dap_dl/certs/.<host name>.cert`
 
-If the certificate is valid, the module will renew it. Otherwise, the constructor will set up guest credentials. If you don't have a valid certificate, you will have to create one via one of the following authentication methods:
-
-#### `a2e.setup_cert_auth(username=None, password=None)`
-
-Sets up authentication with a certificate that can be used for subsequent authentication. The certificate is stored in a file named `.<host name>.cert`, for example `.a2e.energy.gov.cert`. Returns whether or not a valid certificate was created.
-
-#### `a2e.setup_two_factor_auth(username=None, password=None, authcode=None)`
-
-Creates a certificate similar to the method above, but uses two-factor authentication. The authcode is the 6-digit password code from Google Authenticator. This is the highest authentication level available. The certificate is stored in a file named `.<host name>.cert`. Returns whether or not a valid certificate was created.
-
-Alternatively, you can choose to set up basic authentication. This method does not create a certificate.
+If the certificate is valid, the module will renew it. If you don't have a valid certificate, you will have to authenticate via one of the following methods:
 
 #### `a2e.setup_basic_auth(username=None, password=None)`
 
-Sets up basic authentication with a username and password. The arguments are optional, but the module will prompt for them if omitted.
+Creates authentication with a username and password. The arguments are optional, but the module will prompt for them if omitted.
+
+#### `a2e.setup_cert_auth(username=None, password=None)`
+
+Creates authentication with a certificate that can be used for future authentication. The certificate is stored in a file named `.<host name>.cert` (e.g. `.a2e.energy.gov.cert`). Returns whether or not a valid certificate was created.
+
+#### `a2e.setup_two_factor_auth(username=None, password=None, authcode=None)`
+
+Creates a certificate, but with two-factor authentication. The authcode is the 6-digit password code from Google Authenticator. This is the highest authentication level available, and is necessary to search for and download certain datasets. The certificate is stored in a file named `.<host name>.cert`. Returns whether or not a valid certificate was created.
 
 ### Searching for Files
 
