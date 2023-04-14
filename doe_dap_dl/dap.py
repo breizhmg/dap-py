@@ -115,20 +115,32 @@ class DAP:
     # Getting Authenticated
     # --------------------------------------------------------------
 
+    def __validate_response(self, response):
+        if response.status_code != 200:
+            raise BadStatusCodeError(response)
+
+        text = response.text
+        if "errorMessage" in text:
+            error = text.split(",")[0].split("=")[1]
+            self.__print(f"Error: {error}")
+            return False
+
+        return True
+
     def __request_cert(self, params):
         """Request a certificate"""
-        req = requests.put(f"{self._api_url}/creds", params=params)
+        response = requests.put(f"{self._api_url}/creds", params=params)
 
-        if req.status_code != 200:
-            raise BadStatusCodeError(req)
+        if not self.__validate_response(response):
+            return
 
-        self._cert = json.loads(req.text)["cert"]
+        self._cert = json.loads(response.text)["cert"]
         self.__save_cert()
 
     def __create_cert_auth(self):
         """Given an existing certificate, create an auth token"""
         if not self._cert:
-            raise ValueError("cert cannot be None")
+            raise ValueError("Could not create cert auth, missing certificate.")
 
         encoded_cert = base64.b64encode(self._cert.encode("utf-8")).decode("ascii")
         self._auth = {"Authorization": f"Cert {encoded_cert}"}
@@ -354,14 +366,14 @@ class DAP:
 
         params = {"datasets": {f"{dataset}": {"query": filter_arg}}}
 
-        req = requests.put(
+        response = requests.put(
             f"{self._api_url}/orders", headers=self._auth, data=json.dumps(params)
         )
 
-        if req.status_code != 200:
-            raise BadStatusCodeError(req)
+        if not self.__validate_response(response):
+            return
 
-        ID = json.loads(req.text)["id"]
+        ID = json.loads(response.text)["id"]
         return ID
 
     # --------------------------------------------------------------
@@ -400,15 +412,15 @@ class DAP:
 
         # self._print(f"cursor param: {cursor_param}")
 
-        req = requests.get(
+        response = requests.get(
             f"{self._api_url}/orders/{ID}/urls?page_size={page_size}{cursor_param}",
             headers=self._auth,
         )
 
-        if req.status_code != 200:
-            raise BadStatusCodeError(req)
+        if not self.__validate_response(response):
+            return
 
-        response = json.loads(req.text)
+        response = json.loads(response.text)
         urls = response["urls"]
         cursor = response["cursor"]
 
@@ -420,12 +432,14 @@ class DAP:
 
     def __download(self, url, path):
         """Actually download the files"""
-        req = requests.get(url, stream=True)
-        if req.status_code != 200:
-            raise BadStatusCodeError(req)
+        response = requests.get(url, stream=True)
+
+        if not self.__validate_response(response):
+            return
+
         while True:  # is this needed?
             with open(path, "wb") as fp:
-                for chunk in req.iter_content(chunk_size=1024):
+                for chunk in response.iter_content(chunk_size=1024):
                     fp.write(chunk)
             self.__print(f"Download successful! {path}")
             break
@@ -509,15 +523,16 @@ class DAP:
             if "date_time" in f:
                 filter["filter"]["date_time"] = f["date_time"]
 
-            req = requests.post(
+            response = requests.post(
                 f"{self._api_url}/downloads",
                 headers=self._auth,
                 data=json.dumps(filter),
             )
 
-            req.raise_for_status()
+            if not self.__validate_response(response):
+                return
 
-            url = json.loads(req.text)["urls"].values()
+            url = json.loads(response.text)["urls"].values()
 
             # this should only return one url
             if len(url) != 1:
@@ -559,16 +574,16 @@ class DAP:
         the download urls to files in s3
         """
 
-        req = requests.post(
+        response = requests.post(
             f"{self._api_url}/downloads",
             headers=self._auth,
             data=json.dumps(filter_arg),
         )
 
-        if req.status_code != 200:
-            raise BadStatusCodeError(req)
+        if not self.__validate_response(response):
+            return
 
-        urls = json.loads(req.text)["urls"].values()
+        urls = json.loads(response.text)["urls"].values()
         return urls
 
     def download_search(self, filter_arg, path="/var/tmp/", replace=False):
