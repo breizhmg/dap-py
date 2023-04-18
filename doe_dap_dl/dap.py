@@ -456,8 +456,10 @@ class DAP:
         # TODO: multi-thread this
         for url in urls:
             try:
-                a = url.split("/")
-                filename = a[5].split("?")[0]
+                if 'adc.arm.gov' in url:
+                    filename = url.split("file=")[1]
+                else:
+                    filename = url.split("/")[5].split("?")[0]
 
                 download_dir = path
                 os.makedirs(download_dir, exist_ok=True)
