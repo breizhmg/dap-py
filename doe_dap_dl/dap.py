@@ -7,6 +7,7 @@ import traceback
 
 from getpass import getpass
 from pathlib import Path
+from urllib.parse import urlparse
 
 from .utils.scraper import get_api_url
 
@@ -456,10 +457,11 @@ class DAP:
         # TODO: multi-thread this
         for url in urls:
             try:
-                if 'adc.arm.gov' in url:
-                    filename = url.split("file=")[1]
+                parsed_url = urlparse(url)
+                if 'adc.arm.gov' in parsed_url.netloc:
+                    filename = parsed_url.query.split("file=")[1]
                 else:
-                    filename = url.split("/")[5].split("?")[0]
+                    filename = parsed_url.path.split("/")[-1]
 
                 download_dir = path
                 os.makedirs(download_dir, exist_ok=True)
