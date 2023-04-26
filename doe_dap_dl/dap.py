@@ -7,6 +7,7 @@ import traceback
 
 from getpass import getpass
 from pathlib import Path
+from urllib.parse import urlparse, parse_qs
 
 from .utils.scraper import get_api_url
 
@@ -456,8 +457,12 @@ class DAP:
         # TODO: multi-thread this
         for url in urls:
             try:
-                a = url.split("/")
-                filename = a[5].split("?")[0]
+                parsed_url = urlparse(url)
+                query = parse_qs(parsed_url.query)
+                if 'file' in query:
+                    filename = query['file'][0]
+                else:
+                    filename = parsed_url.path.split("/")[-1]
 
                 download_dir = path
                 os.makedirs(download_dir, exist_ok=True)
