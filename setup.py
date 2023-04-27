@@ -1,19 +1,9 @@
 import os
-import pathlib
+from pathlib import Path
 import setuptools
 
-# The directory containing this file
-CWD = pathlib.Path(__file__).parent
-
 # The text of the README file
-README = (CWD / "README.md").read_text()
-
-# Get the list of dependencies from the requirements.txt file
-with open(os.path.join(CWD, "requirements.txt")) as requirements_file:
-    # Parse requirements.txt, ignoring any commented-out lines.
-    REQUIREMENTS = [
-        line for line in requirements_file.read().splitlines() if not line.startswith("#")
-    ]
+README = Path("README.md").read_text()
 
 version = "0.1.0"
 assert "." in version
@@ -42,6 +32,11 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=["docs", "tests", "examples"]),
     include_package_data=True,
     zip_safe=False,
-    install_requires=REQUIREMENTS,
+    install_requires=[
+        "requests",
+        "matplotlib",
+        "numpy",
+        "netcdf4"
+    ],
     scripts=[],
 )
