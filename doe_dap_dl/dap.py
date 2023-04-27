@@ -248,7 +248,9 @@ class DAP:
             f"Setting up two-factor authentication for user {params['username']}..."
         )
 
-        self.__request_cert_auth(params)
+        if not self.__request_cert_auth(params):
+            self.__print(f"Setting up two-factor authentication failed.")
+            return False
 
         valid = self.__cert_is_valid()
         if valid:
