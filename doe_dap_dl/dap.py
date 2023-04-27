@@ -454,8 +454,11 @@ class DAP:
         if not urls:
             raise Exception("No urls provided")
 
-        downloaded_files = []
+        downloaded_paths = []
         self.__print(f"Attempting to download {len(urls)} files...")
+        downloaded = 0
+        failed = 0
+        skipped = 0
         # TODO: multi-thread this
         for url in urls:
             try:
@@ -471,24 +474,27 @@ class DAP:
                 # the final file path
                 filepath = os.path.join(download_dir, filename)
             except:
-                self.__print(f"Incorrectly formmated file path in url: {url}")
+                self.__print(f"Incorrectly formatted file path in url: {url}")
+                failed += 1
                 continue
 
             if not replace and os.path.exists(filepath):
                 self.__print(f"File: {filepath} already exists, skipping...")
+                skipped += 1
             else:
                 try:
                     self.__download(url, filepath)
+                    downloaded_paths.append(filepath)
+                    downloaded += 1
                 except BadStatusCodeError as e:
                     self.__print(f"Could not download file: {filepath}")
                     self.__print(e)
+                    failed += 1
                     continue
 
-            downloaded_files.append(filepath)
+        self.__print(f"{downloaded} files downloaded, {failed} failed, {skipped} skipped")
 
-        self.__print(f"Downloaded {len(downloaded_files)} files!")
-
-        return downloaded_files
+        return downloaded_paths
 
     # --------------------------------------------------------------
     # Place Order and Download
