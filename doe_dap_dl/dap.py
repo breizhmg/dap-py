@@ -269,9 +269,9 @@ class DAP:
             if not quiet:
                 self.__print("No certificate to renew")
             return False
-        else:
-            if not quiet:
-                self.__print("Renewing existing certificate...")
+
+        if not quiet:
+            self.__print("Renewing existing certificate...")
 
         params = {
             "cert": self._cert,
