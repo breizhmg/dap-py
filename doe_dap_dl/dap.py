@@ -94,8 +94,8 @@ class DAP:
         if found_cert:
             self.__read_cert()
 
-            if self.__cert_is_valid():
-                self.__create_cert_auth()
+            if self.renew_cert(quiet=True):
+                self.__create_cert_auth_token()
                 self.__print(
                     "Authenticaion successfully created using valid certificate."
                 )
@@ -138,7 +138,7 @@ class DAP:
         self._cert = json.loads(response.text)["cert"]
         self.__save_cert()
 
-    def __create_cert_auth(self):
+    def __create_cert_auth_token(self):
         """Given an existing certificate, create an auth token"""
         if not self._cert:
             raise ValueError("Could not create cert auth, missing certificate.")
@@ -150,7 +150,7 @@ class DAP:
         """Requests certificate and creates auth token"""
         try:
             self.__request_cert(params)
-            self.__create_cert_auth()
+            self.__create_cert_auth_token()
         except BadStatusCodeError:
             self.__print("Incorrect credentials")
             return False
@@ -194,8 +194,8 @@ class DAP:
             bool: Whether the requested certificate was valid.
         """
 
-        if self.__cert_is_valid():
-            self.__print("Valid certificate already created")
+        if self.renew_cert(quiet=True):
+            self.__print("Valid certificate already created, it has been renewed.")
             return True
 
         params = {
@@ -211,7 +211,7 @@ class DAP:
             self.__print("Requesting a certificate failed.")
             return False
 
-        valid = self.__cert_is_valid()
+        valid = self.renew_cert(quiet=True)
         if valid:
             self.__print(
                 f"Successfully set up certificate authentication for user {params['username']}."
@@ -234,9 +234,9 @@ class DAP:
         Returns:
             bool: Whether the requested certificate was valid.
         """
-        # we can't tell what kind of certification they
-        # have with our current API, so we'll just make
-        # them a new one
+        if self.renew_cert(quiet=True):
+            self.__print("Valid certificate already created, it has been renewed.")
+            return True
 
         params = {
             "username": username or input("username: "),
@@ -252,7 +252,7 @@ class DAP:
             self.__print(f"Setting up two-factor authentication failed.")
             return False
 
-        valid = self.__cert_is_valid()
+        valid = self.renew_cert(quiet=True)
         if valid:
             self.__print(
                 f"Successfully set up two-factor authentication for user {params['username']}."
@@ -263,10 +263,15 @@ class DAP:
             )
         return valid
 
-    def __renew_cert(self):
+    def renew_cert(self, quiet=False):
         """Renews the certificate"""
         if not self._cert:
-            raise ValueError("No certificate to renew")
+            if not quiet:
+                self.__print("No certificate to renew")
+            return False
+
+        if not quiet:
+            self.__print("Renewing existing certificate...")
 
         params = {
             "cert": self._cert,
@@ -276,14 +281,17 @@ class DAP:
         resp = requests.put(f"{self._api_url}/creds", params=params)
 
         if resp.status_code != 200:
-            raise BadStatusCodeError(resp)
+            if not quiet:
+                self.__print(f"Request to renew certificate returned bad status code {resp.status_code}")
+            return False
 
-        return "cert" in resp.json()
-
-    def __cert_is_valid(self):
-        try:
-            return self.__renew_cert()
-        except (ValueError, BadStatusCodeError) as e:
+        if "cert" in resp.json():
+            if not quiet:
+                self.__print("Certificate successfully renewed")
+            return True
+        else:
+            if not quiet:
+                self.__print("Failed to renew certificate, it may be expired or invalid.")
             return False
 
     def __save_cert(self):

@@ -4,7 +4,7 @@ import setuptools
 # The text of the README file
 README = Path("README.md").read_text()
 
-version = "0.2.0"
+version = "0.3.0"
 assert "." in version
 
 setuptools.setup(
