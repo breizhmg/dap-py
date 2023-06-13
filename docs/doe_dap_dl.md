@@ -62,6 +62,8 @@ Creates authentication with a certificate that can be used for future authentica
 
 Creates a certificate, but with two-factor authentication. The authcode is the 6-digit password code from Google Authenticator. This is the highest authentication level available, and is necessary to search for and download certain datasets. The certificate is stored in a file named `.<host name>.cert`. Returns whether or not a valid certificate was created.
 
+Certificates last 24 hours before a new one must be created, and they must be renewed every hour. You can renew your certificate by using `a2e.renew_certificate()`, which returns a boolean representing whether renewing the certificate was successful. You can pass `quiet=True` to supress messages from this function.
+
 ### Searching for Files
 
 To search for files, one must first construct a filter. Below is an example filter.
