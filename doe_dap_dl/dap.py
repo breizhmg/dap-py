@@ -116,11 +116,11 @@ class DAP:
     # Getting Authenticated
     # --------------------------------------------------------------
 
-    def __validate_response(self, response, binary_response=False):
+    def __validate_response(self, response, download_response=False):
         if response.status_code != 200:
             raise BadStatusCodeError(response)
 
-        if binary_response:
+        if download_response:
             return True
 
         text = response.text
@@ -448,7 +448,7 @@ class DAP:
         """Actually download the files"""
         response = requests.get(url, stream=True)
 
-        if not self.__validate_response(response, binary_response=True):
+        if not self.__validate_response(response, download_response=True):
             return
 
         while True:  # is this needed?
