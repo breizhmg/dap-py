@@ -511,7 +511,7 @@ class DAP:
     # Place Order and Download
     # --------------------------------------------------------------
 
-    def download_files(self, files, path="/var/tmp/", replace=False):
+    def download_files2(self, files, path="/var/tmp/", replace=False):
         """Download a list a files
 
         Args:
@@ -587,122 +587,6 @@ class DAP:
             return self.__download_from_urls(urls, path=path, replace=replace)
         except Exception as e:
             self.__print(e)
-
-    def geturlsfrom_files(self, files):
-        """Get a list of urls from files
-
-        Args:
-            files (list): A list of files obtained via search()
-
-        Returns:
-            list: The list of urls to the files to be downloaded.
-        """
-        if not self.__check_for_auth("download files"):
-            return
-
-        if not files:
-            self.__print("No files provided.")
-
-        filter = {
-            "output": "json",
-            "filter": None,
-        }
-
-        urls = []
-        found = 0
-        not_found = 0
-        for f in files:
-            filename = f["Filename"]
-            dataset = f["Dataset"]
-
-            filter["filter"] = {
-                "Filename" : filename,
-                "Dataset" : dataset,
-            }
-            if "date_time" in f:
-                filter["filter"]["date_time"] = f["date_time"]
-
-            response = requests.post(
-                f"{self._api_url}/downloads",
-                headers=self._auth,
-                data=json.dumps(filter),
-            )
-
-            if not self.__validate_response(response):
-                return
-
-            url = json.loads(response.text)["urls"].values()
-
-            # this should only return one url
-            if len(url) != 1:
-                self.__print(
-                    f"found {len(url)} urls instead of one for file {filename}"
-                )
-                not_found += 1
-            else:
-                self.__print(f"found url for file: {filename}")
-                found += 1
-
-            # use extend in case somehow multiple files were found, this might not be necessary
-            urls.extend(url)
-
-        self.__print(f"found {found} files.")
-        if not_found > 0:
-            self.__print(
-                f"Urls could not be found for {not_found} files, these files are most likely not hosted on s3 and should be downloaded via download_with_order()."
-            )
-            
-        return urls
-
-    
-    def downloadfrom_urls(self, urls, path="/var/tmp/", replace=False):
-        """Given a list of urls, download them
-        Returns the successfully downloaded file paths
-        """
-        if not urls:
-            raise Exception("No urls provided")
-
-        downloaded_paths = []
-        self.__print(f"Attempting to download {len(urls)} files...")
-        downloaded = 0
-        failed = 0
-        skipped = 0
-        # TODO: multi-thread this
-        for url in urls:
-            try:
-                parsed_url = urlparse(url)
-                query = parse_qs(parsed_url.query)
-                if 'file' in query:
-                    filename = query['file'][0]
-                else:
-                    filename = parsed_url.path.split("/")[-1]
-
-                download_dir = path
-                os.makedirs(download_dir, exist_ok=True)
-                # the final file path
-                filepath = os.path.join(download_dir, filename)
-            except:
-                self.__print(f"Incorrectly formatted file path in url: {url}")
-                failed += 1
-                continue
-
-            if not replace and os.path.exists(filepath):
-                self.__print(f"File: {filepath} already exists, skipping...")
-                skipped += 1
-            else:
-                try:
-                    self.__download(url, filepath)
-                    downloaded_paths.append(filepath)
-                    downloaded += 1
-                except BadStatusCodeError as e:
-                    self.__print(f"Could not download file: {filepath}")
-                    self.__print(e)
-                    failed += 1
-                    continue
-
-        self.__print(f"{downloaded} files downloaded, {failed} failed, {skipped} skipped")
-
-        return downloaded_paths
 
     # --------------------------------------------------------------
     #  Download All matching Search
