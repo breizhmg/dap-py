@@ -656,53 +656,12 @@ class DAP:
 
     
     def downloadfrom_urls(self, urls, path="/var/tmp/", replace=False):
-        """Given a list of urls, download them
-        Returns the successfully downloaded file paths
-        """
-        if not urls:
-            raise Exception("No urls provided")
 
-        downloaded_paths = []
-        self.__print(f"Attempting to download {len(urls)} files...")
-        downloaded = 0
-        failed = 0
-        skipped = 0
-        # TODO: multi-thread this
-        for url in urls:
-            try:
-                parsed_url = urlparse(url)
-                query = parse_qs(parsed_url.query)
-                if 'file' in query:
-                    filename = query['file'][0]
-                else:
-                    filename = parsed_url.path.split("/")[-1]
+        try:
+            return self.__download_from_urls(urls, path=path, replace=replace)
+        except Exception as e:
+            self.__print(e)
 
-                download_dir = path
-                os.makedirs(download_dir, exist_ok=True)
-                # the final file path
-                filepath = os.path.join(download_dir, filename)
-            except:
-                self.__print(f"Incorrectly formatted file path in url: {url}")
-                failed += 1
-                continue
-
-            if not replace and os.path.exists(filepath):
-                self.__print(f"File: {filepath} already exists, skipping...")
-                skipped += 1
-            else:
-                try:
-                    self.__download(url, filepath)
-                    downloaded_paths.append(filepath)
-                    downloaded += 1
-                except BadStatusCodeError as e:
-                    self.__print(f"Could not download file: {filepath}")
-                    self.__print(e)
-                    failed += 1
-                    continue
-
-        self.__print(f"{downloaded} files downloaded, {failed} failed, {skipped} skipped")
-
-        return downloaded_paths
 
     # --------------------------------------------------------------
     #  Download All matching Search
