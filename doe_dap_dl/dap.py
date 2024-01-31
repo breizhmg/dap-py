@@ -588,6 +588,73 @@ class DAP:
         except Exception as e:
             self.__print(e)
 
+
+    def geturlsfrom_files(self, files):
+        """Get a list of urls from files
+
+        Args:
+            files (list): A list of files obtained via search()
+
+        Returns:
+            list: The list of urls to the files to be downloaded.
+        """
+        if not self.__check_for_auth("download files"):
+            return
+
+        if not files:
+            self.__print("No files provided.")
+
+        filter = {
+            "output": "json",
+            "filter": None,
+        }
+
+        urls = []
+        found = 0
+        not_found = 0
+        for f in files:
+            filename = f["Filename"]
+            dataset = f["Dataset"]
+
+            filter["filter"] = {
+                "Filename" : filename,
+                "Dataset" : dataset,
+            }
+            if "date_time" in f:
+                filter["filter"]["date_time"] = f["date_time"]
+
+            response = requests.post(
+                f"{self._api_url}/downloads",
+                headers=self._auth,
+                data=json.dumps(filter),
+            )
+
+            if not self.__validate_response(response):
+                return
+
+            url = json.loads(response.text)["urls"].values()
+
+            # this should only return one url
+            if len(url) != 1:
+                self.__print(
+                    f"found {len(url)} urls instead of one for file {filename}"
+                )
+                not_found += 1
+            else:
+                self.__print(f"found url for file: {filename}")
+                found += 1
+
+            # use extend in case somehow multiple files were found, this might not be necessary
+            urls.extend(url)
+
+        self.__print(f"found {found} files.")
+        if not_found > 0:
+            self.__print(
+                f"Urls could not be found for {not_found} files, these files are most likely not hosted on s3 and should be downloaded via download_with_order()."
+            )
+            
+        return urls
+
     # --------------------------------------------------------------
     #  Download All matching Search
     # --------------------------------------------------------------
@@ -740,3 +807,4 @@ class DAP:
 
         self.__print(f"{start} Set up authentication with setup_basic_auth(), setup_cert_auth(), or setup_two_factor_auth().")
         self.__print("More information available in the docs: https://github.com/DAP-platform/dap-py/blob/master/docs/doe_dap_dl.md")
+
